@@ -67,7 +67,7 @@ unordered_map<string, string> parse_params(
   return params;
 }
 
-int format(int argc, char **argv) {
+int format(unordered_map<string, string>& params) {
   return 0;
 }
 
@@ -79,8 +79,9 @@ int main(int argc, char **argv) {
   }
 
   string command = string(argv[1]);
+  unordered_map<string, string> params;
   try {
-    unordered_map<string, string> params = parse_params(
+    params = parse_params(
       command,
       argc - 2,
       argv + 2
@@ -92,7 +93,7 @@ int main(int argc, char **argv) {
   }
 
   if (command == "format") {
-    return format(argc - 2, argv + 2);
+    return format(params);
   } else {
     print_unknown_command_error(command);
     print_usage();
