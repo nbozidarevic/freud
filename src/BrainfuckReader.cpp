@@ -1,9 +1,8 @@
-#include <iostream>
 #include "BrainfuckReader.h"
 
-using namespace std;
-
-BrainfuckReader::BrainfuckReader(istream& input):input(input) {}
+BrainfuckReader::BrainfuckReader(
+  istream& input
+):input(input), line(0), col(0) {}
 
 BrainfuckCommand BrainfuckReader::get_next_command() {
   while (true) {

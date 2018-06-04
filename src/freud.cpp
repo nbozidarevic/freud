@@ -1,5 +1,8 @@
 #include <iostream>
+#include <fstream>
 #include <unordered_map>
+
+#include "BrainfuckFormatter.h"
 
 using namespace std;
 
@@ -68,6 +71,32 @@ unordered_map<string, string> parse_params(
 }
 
 int format(unordered_map<string, string>& params) {
+  istream *inputStream = &cin;
+  unordered_map<string, string>::iterator input = params.find("-i");
+  if (input != params.end()) {
+    inputStream = new ifstream(input->second, ifstream::in);
+  }
+
+  ostream *outputStream = &cout;
+  unordered_map<string, string>::iterator output = params.find("-o");
+  if (output != params.end()) {
+    outputStream = new ofstream(output->second, ifstream::out);
+  }
+
+  BrainfuckFormatter bff(
+    *inputStream,
+    *outputStream,
+    params.find("-m") != params.end()
+  );
+  bff.run();
+
+  if (input != params.end()) {
+    delete inputStream;
+  }
+  if (output != params.end()) {
+    delete outputStream;
+  }
+
   return 0;
 }
 
