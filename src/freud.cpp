@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 #include "BrainfuckFormatter.h"
+#include "BrainfuckRunner.h"
 
 using namespace std;
 
@@ -50,7 +51,10 @@ unordered_map<string, string> parse_params(
     string param = string(argv[i]);
     string value;
 
-    if (param == "-i" || param == "-o") {
+    if (command == "run") {
+      value = param;
+      param = "-c";
+    } else if (param == "-i" || param == "-o") {
       ++i;
       if (i < argc) {
         value = string(argv[i]);
@@ -100,6 +104,38 @@ int format(unordered_map<string, string>& params) {
   return 0;
 }
 
+int run(unordered_map<string, string>& params) {
+  unordered_map<string, string>::iterator code = params.find("-c");
+  if (code == params.end()) {
+    throw "Missing Brainfuck file to run";
+  }
+  istream *codeStream = new ifstream(code->second, ifstream::in);
+
+  istream *inputStream = &cin;
+  unordered_map<string, string>::iterator input = params.find("-i");
+  if (input != params.end()) {
+    inputStream = new ifstream(input->second, ifstream::in);
+  }
+
+  ostream *outputStream = &cout;
+  unordered_map<string, string>::iterator output = params.find("-o");
+  if (output != params.end()) {
+    outputStream = new ofstream(output->second, ifstream::out);
+  }
+
+  BrainfuckRunner bfr(*codeStream, *inputStream, *outputStream);
+  bfr.run();
+
+  if (input != params.end()) {
+    delete inputStream;
+  }
+  if (output != params.end()) {
+    delete outputStream;
+  }
+
+  return 0;
+}
+
 int main(int argc, char **argv) {
   if (argc < 2) {
     print_header();
@@ -123,6 +159,8 @@ int main(int argc, char **argv) {
 
   if (command == "format") {
     return format(params);
+  } else if (command == "run") {
+    return run(params);
   } else {
     print_unknown_command_error(command);
     print_usage();

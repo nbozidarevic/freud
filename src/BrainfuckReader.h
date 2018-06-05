@@ -11,8 +11,8 @@ enum BrainfuckCommand {
   MOVE_RIGHT = '>',
   VALUE_INCREMENT = '+',
   VALUE_DECREMENT = '-',
-  VALUE_READ = '.',
-  VALUE_WRITE = ',',
+  VALUE_READ = ',',
+  VALUE_WRITE = '.',
   LOOP_BEGIN = '[',
   LOOP_END = ']'
 };
