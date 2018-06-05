@@ -63,4 +63,5 @@ void BrainfuckFormatter::run() {
     output << (char)command;
     prevCommand = command;
   }
+  output << endl;
 }
