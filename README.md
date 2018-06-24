@@ -1,10 +1,16 @@
 # freud
 Freud – A toolset for working with the Brainfuck programming language
 
+## Requirements
+- Unix (due to the Makefile)
+- G++
+- ANTLR4
+
 ## Usage
 
 ```
-freud command file [parametres]
+> make
+> ./bin/freud command file [parametres]
 ```
 
 ## Supported commands
