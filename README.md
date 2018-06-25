@@ -4,7 +4,7 @@ Freud – A toolset for working with the Brainfuck programming language
 ## Requirements
 - Unix (due to the Makefile)
 - G++
-- ANTLR4
+- ANTLR 4.7.1
 
 ## Usage
 

@@ -6,8 +6,10 @@ LIBRARIES_DIR := lib
 OBJECTS_DIR := obj
 SOURCES_DIR := src
 INCLUDES_DIR := $(SOURCES_DIR)/includes
+GRAMMARS_DIR := $(SOURCES_DIR)/grammar
 ANTLR_RUNTIME_DIR := $(INCLUDES_DIR)/antlr-runtime
 
+HEADER_EXT := h
 SOURCE_EXT := cpp
 GRAMMAR_EXT := g4
 
@@ -29,13 +31,12 @@ $(OBJECTS_DIR)/%.o: $(SOURCES_DIR)/%.$(SOURCE_EXT)
 	@mkdir -p $(dir $(OBJECTS))
 	@echo "    $(CC) $(CFLAGS) -I $(INCLUDES_DIR) -I $(ANTLR_RUNTIME_DIR) -c -o $@ $<"; $(CC) $(CFLAGS) -I $(INCLUDES_DIR) -I $(ANTLR_RUNTIME_DIR) -c -o $@ $<
 
-grammar:
+grammar: $(GRAMMARS)
 	@echo "  Generating grammar"
-	@echo "    $(ANTLR) -Dlanguage=Cpp src/grammar/SimpleC.g4"; $(ANTLR) -Dlanguage=Cpp src/grammar/SimpleC.g4
-	@echo "    mv src/grammar/*.h src/includes"; mv src/grammar/*.h src/includes
-	@echo "    $(RM) src/grammar/*.tokens"; $(RM) src/grammar/*.tokens
-	@echo "    $(RM) src/grammar/*.interp"; $(RM) src/grammar/*.interp
-
+	@echo "    $(ANTLR) -Dlanguage=Cpp $^"; $(ANTLR) -Dlanguage=Cpp $^
+	@echo "    mv $(GRAMMARS_DIR)/*.$(HEADER_EXT) $(INCLUDES_DIR)"; mv $(GRAMMARS_DIR)/*.$(HEADER_EXT) $(INCLUDES_DIR)
+	@echo "    $(RM) $(GRAMMARS_DIR)/*.tokens"; $(RM) $(GRAMMARS_DIR)/*.tokens
+	@echo "    $(RM) $(GRAMMARS_DIR)/*.interp"; $(RM) $(GRAMMARS_DIR)/*.interp
 
 clean:
 	@echo "  Cleaning...";
