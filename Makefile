@@ -33,7 +33,7 @@ $(OBJECTS_DIR)/%.o: $(SOURCES_DIR)/%.$(SOURCE_EXT)
 
 grammar: $(GRAMMARS)
 	@echo "  Generating grammar"
-	@echo "    $(ANTLR) -Dlanguage=Cpp $^"; $(ANTLR) -Dlanguage=Cpp $^
+	@echo "    $(ANTLR) -Dlanguage=Cpp -visitor $^"; $(ANTLR) -Dlanguage=Cpp -visitor $^
 	@echo "    mv $(GRAMMARS_DIR)/*.$(HEADER_EXT) $(INCLUDES_DIR)"; mv $(GRAMMARS_DIR)/*.$(HEADER_EXT) $(INCLUDES_DIR)
 	@echo "    $(RM) $(GRAMMARS_DIR)/*.tokens"; $(RM) $(GRAMMARS_DIR)/*.tokens
 	@echo "    $(RM) $(GRAMMARS_DIR)/*.interp"; $(RM) $(GRAMMARS_DIR)/*.interp

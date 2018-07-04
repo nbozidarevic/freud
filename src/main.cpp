@@ -2,6 +2,7 @@
 #include <fstream>
 #include <unordered_map>
 
+#include "BrainfuckCompiler.h"
 #include "BrainfuckFormatter.h"
 #include "BrainfuckRunner.h"
 
@@ -31,6 +32,17 @@ void print_usage() {
     << endl << endl;
 
   cout << "Supported commands:" << endl << endl;
+
+  cout
+    << "\t\033[1mcompile\033[0m "
+    << "\033[4mfile\033[0m "
+    << "[-o output-file]"
+    << endl << endl;
+  cout
+    << "\t\tCompiles the specified C program to Brainfuck." << endl << endl;
+  cout
+    << "\t\tIf no output file is specified, the standard" << endl
+    << "\t\toutput is used." << endl << endl;
 
   cout
     << "\t\033[1mformat\033[0m "
@@ -73,7 +85,7 @@ unordered_map<string, string> parse_params(
     string param = string(argv[i]);
     string value;
 
-    if (command == "format" && param == "-o") {
+    if ((command == "compile" || command == "format") && param == "-o") {
       ++i;
       if (i < argc) {
         params["output"] = string(argv[i]);
@@ -120,6 +132,33 @@ int format(unordered_map<string, string>& params) {
   return 0;
 }
 
+int compile(unordered_map<string, string>& params) {
+  unordered_map<string, string>::iterator code = params.find("code");
+  if (code == params.end()) {
+    throw "Missing C file to compile.";
+  }
+  istream *codeStream = new ifstream(code->second, ifstream::in);
+
+  unordered_map<string, string>::iterator output = params.find("output");
+  ostream *formattedCodeStream =
+    output != params.end()
+      ? new ofstream(output->second, ifstream::out)
+      : &cout;
+
+  BrainfuckCompiler bfc(
+    *codeStream,
+    *formattedCodeStream
+  );
+  bfc.run();
+
+  delete codeStream;
+  if (output != params.end()) {
+    delete formattedCodeStream;
+  }
+
+  return 0;
+}
+
 int run(unordered_map<string, string>& params) {
   unordered_map<string, string>::iterator code = params.find("code");
   if (code == params.end()) {
@@ -151,6 +190,9 @@ int main(int argc, char **argv) {
       argv + 2
     );
 
+    if (command == "compile") {
+      return compile(params);
+    }
     if (command == "format") {
       return format(params);
     }

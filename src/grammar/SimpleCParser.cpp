@@ -3,6 +3,7 @@
 
 
 #include "SimpleCListener.h"
+#include "SimpleCVisitor.h"
 
 #include "SimpleCParser.h"
 
@@ -60,6 +61,14 @@ void SimpleCParser::ProgramContext::exitRule(tree::ParseTreeListener *listener) 
   auto parserListener = dynamic_cast<SimpleCListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitProgram(this);
+}
+
+
+antlrcpp::Any SimpleCParser::ProgramContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<SimpleCVisitor*>(visitor))
+    return parserVisitor->visitProgram(this);
+  else
+    return visitor->visitChildren(this);
 }
 
 SimpleCParser::ProgramContext* SimpleCParser::program() {
