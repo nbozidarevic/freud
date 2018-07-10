@@ -14,5 +14,5 @@ void BrainfuckCompiler::run() {
   SimpleCParser parser(&tokens);
   SimpleCParser::ProgramContext* tree = parser.program();
 
-  cout << tree->toStringTree(&parser) << endl;
+  output << tree->toStringTree(&parser) << endl;
 }

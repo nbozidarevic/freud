@@ -20,8 +20,11 @@ OBJECTS := $(patsubst $(SOURCES_DIR)/%,$(OBJECTS_DIR)/%,$(SOURCES:.$(SOURCE_EXT)
 
 TARGET := bin/freud
 
-$(TARGET): $(OBJECTS)
+freud:
 	$(MAKE) grammar
+	$(MAKE) $(TARGET)
+
+$(TARGET): $(OBJECTS)
 	@echo "  Linking $(TARGET)..."
 	@mkdir -p $(dir $(TARGET))
 	@echo "    $(CC) $^ $(ANTLR_LIBRARY) -o $(TARGET)"; $(CC) $^ $(ANTLR_LIBRARY) -o $(TARGET)
