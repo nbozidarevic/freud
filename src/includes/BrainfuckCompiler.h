@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "antlr4-runtime.h"
+#include "BrainfuckMemory.h"
 #include "SimpleCLexer.h"
 #include "SimpleCParser.h"
 
@@ -15,6 +16,7 @@ public:
 private:
   istream& input;
   ostream& output;
+  BrainfuckMemory memory;
 };
 
 #endif
