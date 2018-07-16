@@ -12,7 +12,7 @@ void BrainfuckCompiler::run() {
   SimpleCLexer lexer(&antlrInput);
   CommonTokenStream tokens(&lexer);
   SimpleCParser parser(&tokens);
-  SimpleCParser::ProgramContext* tree = parser.program();
+  SimpleCParser::CompilationUnitContext* tree = parser.compilationUnit();
 
   output << tree->toStringTree(&parser) << endl;
 }

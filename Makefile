@@ -20,10 +20,6 @@ OBJECTS := $(patsubst $(SOURCES_DIR)/%,$(OBJECTS_DIR)/%,$(SOURCES:.$(SOURCE_EXT)
 
 TARGET := bin/freud
 
-freud:
-	$(MAKE) grammar
-	$(MAKE) $(TARGET)
-
 $(TARGET): $(OBJECTS)
 	@echo "  Linking $(TARGET)..."
 	@mkdir -p $(dir $(TARGET))
