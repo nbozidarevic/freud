@@ -62,12 +62,6 @@ public:
   virtual void enterDeclaration(SimpleCParser::DeclarationContext *ctx) = 0;
   virtual void exitDeclaration(SimpleCParser::DeclarationContext *ctx) = 0;
 
-  virtual void enterDeclarationSpecifiers(SimpleCParser::DeclarationSpecifiersContext *ctx) = 0;
-  virtual void exitDeclarationSpecifiers(SimpleCParser::DeclarationSpecifiersContext *ctx) = 0;
-
-  virtual void enterDeclarationSpecifiers2(SimpleCParser::DeclarationSpecifiers2Context *ctx) = 0;
-  virtual void exitDeclarationSpecifiers2(SimpleCParser::DeclarationSpecifiers2Context *ctx) = 0;
-
   virtual void enterDeclarationSpecifier(SimpleCParser::DeclarationSpecifierContext *ctx) = 0;
   virtual void exitDeclarationSpecifier(SimpleCParser::DeclarationSpecifierContext *ctx) = 0;
 
@@ -77,53 +71,14 @@ public:
   virtual void enterInitDeclarator(SimpleCParser::InitDeclaratorContext *ctx) = 0;
   virtual void exitInitDeclarator(SimpleCParser::InitDeclaratorContext *ctx) = 0;
 
-  virtual void enterTypeSpecifier(SimpleCParser::TypeSpecifierContext *ctx) = 0;
-  virtual void exitTypeSpecifier(SimpleCParser::TypeSpecifierContext *ctx) = 0;
-
-  virtual void enterStructDeclarationList(SimpleCParser::StructDeclarationListContext *ctx) = 0;
-  virtual void exitStructDeclarationList(SimpleCParser::StructDeclarationListContext *ctx) = 0;
-
-  virtual void enterStructDeclaration(SimpleCParser::StructDeclarationContext *ctx) = 0;
-  virtual void exitStructDeclaration(SimpleCParser::StructDeclarationContext *ctx) = 0;
-
-  virtual void enterSpecifierQualifierList(SimpleCParser::SpecifierQualifierListContext *ctx) = 0;
-  virtual void exitSpecifierQualifierList(SimpleCParser::SpecifierQualifierListContext *ctx) = 0;
-
-  virtual void enterStructDeclaratorList(SimpleCParser::StructDeclaratorListContext *ctx) = 0;
-  virtual void exitStructDeclaratorList(SimpleCParser::StructDeclaratorListContext *ctx) = 0;
-
-  virtual void enterStructDeclarator(SimpleCParser::StructDeclaratorContext *ctx) = 0;
-  virtual void exitStructDeclarator(SimpleCParser::StructDeclaratorContext *ctx) = 0;
-
-  virtual void enterTypeQualifier(SimpleCParser::TypeQualifierContext *ctx) = 0;
-  virtual void exitTypeQualifier(SimpleCParser::TypeQualifierContext *ctx) = 0;
-
-  virtual void enterAlignmentSpecifier(SimpleCParser::AlignmentSpecifierContext *ctx) = 0;
-  virtual void exitAlignmentSpecifier(SimpleCParser::AlignmentSpecifierContext *ctx) = 0;
-
   virtual void enterDeclarator(SimpleCParser::DeclaratorContext *ctx) = 0;
   virtual void exitDeclarator(SimpleCParser::DeclaratorContext *ctx) = 0;
 
   virtual void enterDirectDeclarator(SimpleCParser::DirectDeclaratorContext *ctx) = 0;
   virtual void exitDirectDeclarator(SimpleCParser::DirectDeclaratorContext *ctx) = 0;
 
-  virtual void enterGccDeclaratorExtension(SimpleCParser::GccDeclaratorExtensionContext *ctx) = 0;
-  virtual void exitGccDeclaratorExtension(SimpleCParser::GccDeclaratorExtensionContext *ctx) = 0;
-
-  virtual void enterGccAttributeSpecifier(SimpleCParser::GccAttributeSpecifierContext *ctx) = 0;
-  virtual void exitGccAttributeSpecifier(SimpleCParser::GccAttributeSpecifierContext *ctx) = 0;
-
-  virtual void enterGccAttributeList(SimpleCParser::GccAttributeListContext *ctx) = 0;
-  virtual void exitGccAttributeList(SimpleCParser::GccAttributeListContext *ctx) = 0;
-
-  virtual void enterGccAttribute(SimpleCParser::GccAttributeContext *ctx) = 0;
-  virtual void exitGccAttribute(SimpleCParser::GccAttributeContext *ctx) = 0;
-
   virtual void enterNestedParenthesesBlock(SimpleCParser::NestedParenthesesBlockContext *ctx) = 0;
   virtual void exitNestedParenthesesBlock(SimpleCParser::NestedParenthesesBlockContext *ctx) = 0;
-
-  virtual void enterTypeQualifierList(SimpleCParser::TypeQualifierListContext *ctx) = 0;
-  virtual void exitTypeQualifierList(SimpleCParser::TypeQualifierListContext *ctx) = 0;
 
   virtual void enterParameterTypeList(SimpleCParser::ParameterTypeListContext *ctx) = 0;
   virtual void exitParameterTypeList(SimpleCParser::ParameterTypeListContext *ctx) = 0;
@@ -137,17 +92,11 @@ public:
   virtual void enterIdentifierList(SimpleCParser::IdentifierListContext *ctx) = 0;
   virtual void exitIdentifierList(SimpleCParser::IdentifierListContext *ctx) = 0;
 
-  virtual void enterTypeName(SimpleCParser::TypeNameContext *ctx) = 0;
-  virtual void exitTypeName(SimpleCParser::TypeNameContext *ctx) = 0;
-
   virtual void enterAbstractDeclarator(SimpleCParser::AbstractDeclaratorContext *ctx) = 0;
   virtual void exitAbstractDeclarator(SimpleCParser::AbstractDeclaratorContext *ctx) = 0;
 
   virtual void enterDirectAbstractDeclarator(SimpleCParser::DirectAbstractDeclaratorContext *ctx) = 0;
   virtual void exitDirectAbstractDeclarator(SimpleCParser::DirectAbstractDeclaratorContext *ctx) = 0;
-
-  virtual void enterTypedefName(SimpleCParser::TypedefNameContext *ctx) = 0;
-  virtual void exitTypedefName(SimpleCParser::TypedefNameContext *ctx) = 0;
 
   virtual void enterInitializer(SimpleCParser::InitializerContext *ctx) = 0;
   virtual void exitInitializer(SimpleCParser::InitializerContext *ctx) = 0;

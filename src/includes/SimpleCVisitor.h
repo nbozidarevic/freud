@@ -51,47 +51,17 @@ public:
 
     virtual antlrcpp::Any visitDeclaration(SimpleCParser::DeclarationContext *context) = 0;
 
-    virtual antlrcpp::Any visitDeclarationSpecifiers(SimpleCParser::DeclarationSpecifiersContext *context) = 0;
-
-    virtual antlrcpp::Any visitDeclarationSpecifiers2(SimpleCParser::DeclarationSpecifiers2Context *context) = 0;
-
     virtual antlrcpp::Any visitDeclarationSpecifier(SimpleCParser::DeclarationSpecifierContext *context) = 0;
 
     virtual antlrcpp::Any visitInitDeclaratorList(SimpleCParser::InitDeclaratorListContext *context) = 0;
 
     virtual antlrcpp::Any visitInitDeclarator(SimpleCParser::InitDeclaratorContext *context) = 0;
 
-    virtual antlrcpp::Any visitTypeSpecifier(SimpleCParser::TypeSpecifierContext *context) = 0;
-
-    virtual antlrcpp::Any visitStructDeclarationList(SimpleCParser::StructDeclarationListContext *context) = 0;
-
-    virtual antlrcpp::Any visitStructDeclaration(SimpleCParser::StructDeclarationContext *context) = 0;
-
-    virtual antlrcpp::Any visitSpecifierQualifierList(SimpleCParser::SpecifierQualifierListContext *context) = 0;
-
-    virtual antlrcpp::Any visitStructDeclaratorList(SimpleCParser::StructDeclaratorListContext *context) = 0;
-
-    virtual antlrcpp::Any visitStructDeclarator(SimpleCParser::StructDeclaratorContext *context) = 0;
-
-    virtual antlrcpp::Any visitTypeQualifier(SimpleCParser::TypeQualifierContext *context) = 0;
-
-    virtual antlrcpp::Any visitAlignmentSpecifier(SimpleCParser::AlignmentSpecifierContext *context) = 0;
-
     virtual antlrcpp::Any visitDeclarator(SimpleCParser::DeclaratorContext *context) = 0;
 
     virtual antlrcpp::Any visitDirectDeclarator(SimpleCParser::DirectDeclaratorContext *context) = 0;
 
-    virtual antlrcpp::Any visitGccDeclaratorExtension(SimpleCParser::GccDeclaratorExtensionContext *context) = 0;
-
-    virtual antlrcpp::Any visitGccAttributeSpecifier(SimpleCParser::GccAttributeSpecifierContext *context) = 0;
-
-    virtual antlrcpp::Any visitGccAttributeList(SimpleCParser::GccAttributeListContext *context) = 0;
-
-    virtual antlrcpp::Any visitGccAttribute(SimpleCParser::GccAttributeContext *context) = 0;
-
     virtual antlrcpp::Any visitNestedParenthesesBlock(SimpleCParser::NestedParenthesesBlockContext *context) = 0;
-
-    virtual antlrcpp::Any visitTypeQualifierList(SimpleCParser::TypeQualifierListContext *context) = 0;
 
     virtual antlrcpp::Any visitParameterTypeList(SimpleCParser::ParameterTypeListContext *context) = 0;
 
@@ -101,13 +71,9 @@ public:
 
     virtual antlrcpp::Any visitIdentifierList(SimpleCParser::IdentifierListContext *context) = 0;
 
-    virtual antlrcpp::Any visitTypeName(SimpleCParser::TypeNameContext *context) = 0;
-
     virtual antlrcpp::Any visitAbstractDeclarator(SimpleCParser::AbstractDeclaratorContext *context) = 0;
 
     virtual antlrcpp::Any visitDirectAbstractDeclarator(SimpleCParser::DirectAbstractDeclaratorContext *context) = 0;
-
-    virtual antlrcpp::Any visitTypedefName(SimpleCParser::TypedefNameContext *context) = 0;
 
     virtual antlrcpp::Any visitInitializer(SimpleCParser::InitializerContext *context) = 0;
 

@@ -64,12 +64,6 @@ public:
   virtual void enterDeclaration(SimpleCParser::DeclarationContext * /*ctx*/) override { }
   virtual void exitDeclaration(SimpleCParser::DeclarationContext * /*ctx*/) override { }
 
-  virtual void enterDeclarationSpecifiers(SimpleCParser::DeclarationSpecifiersContext * /*ctx*/) override { }
-  virtual void exitDeclarationSpecifiers(SimpleCParser::DeclarationSpecifiersContext * /*ctx*/) override { }
-
-  virtual void enterDeclarationSpecifiers2(SimpleCParser::DeclarationSpecifiers2Context * /*ctx*/) override { }
-  virtual void exitDeclarationSpecifiers2(SimpleCParser::DeclarationSpecifiers2Context * /*ctx*/) override { }
-
   virtual void enterDeclarationSpecifier(SimpleCParser::DeclarationSpecifierContext * /*ctx*/) override { }
   virtual void exitDeclarationSpecifier(SimpleCParser::DeclarationSpecifierContext * /*ctx*/) override { }
 
@@ -79,53 +73,14 @@ public:
   virtual void enterInitDeclarator(SimpleCParser::InitDeclaratorContext * /*ctx*/) override { }
   virtual void exitInitDeclarator(SimpleCParser::InitDeclaratorContext * /*ctx*/) override { }
 
-  virtual void enterTypeSpecifier(SimpleCParser::TypeSpecifierContext * /*ctx*/) override { }
-  virtual void exitTypeSpecifier(SimpleCParser::TypeSpecifierContext * /*ctx*/) override { }
-
-  virtual void enterStructDeclarationList(SimpleCParser::StructDeclarationListContext * /*ctx*/) override { }
-  virtual void exitStructDeclarationList(SimpleCParser::StructDeclarationListContext * /*ctx*/) override { }
-
-  virtual void enterStructDeclaration(SimpleCParser::StructDeclarationContext * /*ctx*/) override { }
-  virtual void exitStructDeclaration(SimpleCParser::StructDeclarationContext * /*ctx*/) override { }
-
-  virtual void enterSpecifierQualifierList(SimpleCParser::SpecifierQualifierListContext * /*ctx*/) override { }
-  virtual void exitSpecifierQualifierList(SimpleCParser::SpecifierQualifierListContext * /*ctx*/) override { }
-
-  virtual void enterStructDeclaratorList(SimpleCParser::StructDeclaratorListContext * /*ctx*/) override { }
-  virtual void exitStructDeclaratorList(SimpleCParser::StructDeclaratorListContext * /*ctx*/) override { }
-
-  virtual void enterStructDeclarator(SimpleCParser::StructDeclaratorContext * /*ctx*/) override { }
-  virtual void exitStructDeclarator(SimpleCParser::StructDeclaratorContext * /*ctx*/) override { }
-
-  virtual void enterTypeQualifier(SimpleCParser::TypeQualifierContext * /*ctx*/) override { }
-  virtual void exitTypeQualifier(SimpleCParser::TypeQualifierContext * /*ctx*/) override { }
-
-  virtual void enterAlignmentSpecifier(SimpleCParser::AlignmentSpecifierContext * /*ctx*/) override { }
-  virtual void exitAlignmentSpecifier(SimpleCParser::AlignmentSpecifierContext * /*ctx*/) override { }
-
   virtual void enterDeclarator(SimpleCParser::DeclaratorContext * /*ctx*/) override { }
   virtual void exitDeclarator(SimpleCParser::DeclaratorContext * /*ctx*/) override { }
 
   virtual void enterDirectDeclarator(SimpleCParser::DirectDeclaratorContext * /*ctx*/) override { }
   virtual void exitDirectDeclarator(SimpleCParser::DirectDeclaratorContext * /*ctx*/) override { }
 
-  virtual void enterGccDeclaratorExtension(SimpleCParser::GccDeclaratorExtensionContext * /*ctx*/) override { }
-  virtual void exitGccDeclaratorExtension(SimpleCParser::GccDeclaratorExtensionContext * /*ctx*/) override { }
-
-  virtual void enterGccAttributeSpecifier(SimpleCParser::GccAttributeSpecifierContext * /*ctx*/) override { }
-  virtual void exitGccAttributeSpecifier(SimpleCParser::GccAttributeSpecifierContext * /*ctx*/) override { }
-
-  virtual void enterGccAttributeList(SimpleCParser::GccAttributeListContext * /*ctx*/) override { }
-  virtual void exitGccAttributeList(SimpleCParser::GccAttributeListContext * /*ctx*/) override { }
-
-  virtual void enterGccAttribute(SimpleCParser::GccAttributeContext * /*ctx*/) override { }
-  virtual void exitGccAttribute(SimpleCParser::GccAttributeContext * /*ctx*/) override { }
-
   virtual void enterNestedParenthesesBlock(SimpleCParser::NestedParenthesesBlockContext * /*ctx*/) override { }
   virtual void exitNestedParenthesesBlock(SimpleCParser::NestedParenthesesBlockContext * /*ctx*/) override { }
-
-  virtual void enterTypeQualifierList(SimpleCParser::TypeQualifierListContext * /*ctx*/) override { }
-  virtual void exitTypeQualifierList(SimpleCParser::TypeQualifierListContext * /*ctx*/) override { }
 
   virtual void enterParameterTypeList(SimpleCParser::ParameterTypeListContext * /*ctx*/) override { }
   virtual void exitParameterTypeList(SimpleCParser::ParameterTypeListContext * /*ctx*/) override { }
@@ -139,17 +94,11 @@ public:
   virtual void enterIdentifierList(SimpleCParser::IdentifierListContext * /*ctx*/) override { }
   virtual void exitIdentifierList(SimpleCParser::IdentifierListContext * /*ctx*/) override { }
 
-  virtual void enterTypeName(SimpleCParser::TypeNameContext * /*ctx*/) override { }
-  virtual void exitTypeName(SimpleCParser::TypeNameContext * /*ctx*/) override { }
-
   virtual void enterAbstractDeclarator(SimpleCParser::AbstractDeclaratorContext * /*ctx*/) override { }
   virtual void exitAbstractDeclarator(SimpleCParser::AbstractDeclaratorContext * /*ctx*/) override { }
 
   virtual void enterDirectAbstractDeclarator(SimpleCParser::DirectAbstractDeclaratorContext * /*ctx*/) override { }
   virtual void exitDirectAbstractDeclarator(SimpleCParser::DirectAbstractDeclaratorContext * /*ctx*/) override { }
-
-  virtual void enterTypedefName(SimpleCParser::TypedefNameContext * /*ctx*/) override { }
-  virtual void exitTypedefName(SimpleCParser::TypedefNameContext * /*ctx*/) override { }
 
   virtual void enterInitializer(SimpleCParser::InitializerContext * /*ctx*/) override { }
   virtual void exitInitializer(SimpleCParser::InitializerContext * /*ctx*/) override { }

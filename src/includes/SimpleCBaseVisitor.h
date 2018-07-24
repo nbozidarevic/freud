@@ -79,14 +79,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitDeclarationSpecifiers(SimpleCParser::DeclarationSpecifiersContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitDeclarationSpecifiers2(SimpleCParser::DeclarationSpecifiers2Context *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual antlrcpp::Any visitDeclarationSpecifier(SimpleCParser::DeclarationSpecifierContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -99,38 +91,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitTypeSpecifier(SimpleCParser::TypeSpecifierContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitStructDeclarationList(SimpleCParser::StructDeclarationListContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitStructDeclaration(SimpleCParser::StructDeclarationContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitSpecifierQualifierList(SimpleCParser::SpecifierQualifierListContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitStructDeclaratorList(SimpleCParser::StructDeclaratorListContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitStructDeclarator(SimpleCParser::StructDeclaratorContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitTypeQualifier(SimpleCParser::TypeQualifierContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitAlignmentSpecifier(SimpleCParser::AlignmentSpecifierContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual antlrcpp::Any visitDeclarator(SimpleCParser::DeclaratorContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -139,27 +99,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitGccDeclaratorExtension(SimpleCParser::GccDeclaratorExtensionContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitGccAttributeSpecifier(SimpleCParser::GccAttributeSpecifierContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitGccAttributeList(SimpleCParser::GccAttributeListContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitGccAttribute(SimpleCParser::GccAttributeContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual antlrcpp::Any visitNestedParenthesesBlock(SimpleCParser::NestedParenthesesBlockContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitTypeQualifierList(SimpleCParser::TypeQualifierListContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -179,19 +119,11 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitTypeName(SimpleCParser::TypeNameContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual antlrcpp::Any visitAbstractDeclarator(SimpleCParser::AbstractDeclaratorContext *ctx) override {
     return visitChildren(ctx);
   }
 
   virtual antlrcpp::Any visitDirectAbstractDeclarator(SimpleCParser::DirectAbstractDeclaratorContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitTypedefName(SimpleCParser::TypedefNameContext *ctx) override {
     return visitChildren(ctx);
   }
 
