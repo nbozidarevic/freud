@@ -83,10 +83,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitInitDeclaratorList(SimpleCParser::InitDeclaratorListContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual antlrcpp::Any visitInitDeclarator(SimpleCParser::InitDeclaratorContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -104,10 +100,6 @@ public:
   }
 
   virtual antlrcpp::Any visitParameterTypeList(SimpleCParser::ParameterTypeListContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitParameterList(SimpleCParser::ParameterListContext *ctx) override {
     return visitChildren(ctx);
   }
 

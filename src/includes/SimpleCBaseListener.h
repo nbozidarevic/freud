@@ -67,9 +67,6 @@ public:
   virtual void enterDeclarationSpecifier(SimpleCParser::DeclarationSpecifierContext * /*ctx*/) override { }
   virtual void exitDeclarationSpecifier(SimpleCParser::DeclarationSpecifierContext * /*ctx*/) override { }
 
-  virtual void enterInitDeclaratorList(SimpleCParser::InitDeclaratorListContext * /*ctx*/) override { }
-  virtual void exitInitDeclaratorList(SimpleCParser::InitDeclaratorListContext * /*ctx*/) override { }
-
   virtual void enterInitDeclarator(SimpleCParser::InitDeclaratorContext * /*ctx*/) override { }
   virtual void exitInitDeclarator(SimpleCParser::InitDeclaratorContext * /*ctx*/) override { }
 
@@ -84,9 +81,6 @@ public:
 
   virtual void enterParameterTypeList(SimpleCParser::ParameterTypeListContext * /*ctx*/) override { }
   virtual void exitParameterTypeList(SimpleCParser::ParameterTypeListContext * /*ctx*/) override { }
-
-  virtual void enterParameterList(SimpleCParser::ParameterListContext * /*ctx*/) override { }
-  virtual void exitParameterList(SimpleCParser::ParameterListContext * /*ctx*/) override { }
 
   virtual void enterParameterDeclaration(SimpleCParser::ParameterDeclarationContext * /*ctx*/) override { }
   virtual void exitParameterDeclaration(SimpleCParser::ParameterDeclarationContext * /*ctx*/) override { }

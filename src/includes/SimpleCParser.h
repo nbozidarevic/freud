@@ -12,17 +12,17 @@
 class  SimpleCParser : public antlr4::Parser {
 public:
   enum {
-    T__0 = 1, T__1 = 2, Break = 3, Case = 4, Char = 5, Continue = 6, Default = 7, 
-    Do = 8, Else = 9, For = 10, Goto = 11, If = 12, Int = 13, Long = 14, 
-    Return = 15, Short = 16, Switch = 17, Void = 18, While = 19, LeftParen = 20, 
-    RightParen = 21, LeftBracket = 22, RightBracket = 23, LeftBrace = 24, 
-    RightBrace = 25, Less = 26, LessEqual = 27, Greater = 28, GreaterEqual = 29, 
-    Plus = 30, PlusPlus = 31, Minus = 32, MinusMinus = 33, Star = 34, Div = 35, 
-    Mod = 36, AndAnd = 37, OrOr = 38, Not = 39, Question = 40, Colon = 41, 
-    Semi = 42, Comma = 43, Assign = 44, StarAssign = 45, DivAssign = 46, 
-    ModAssign = 47, PlusAssign = 48, MinusAssign = 49, Equal = 50, NotEqual = 51, 
-    Identifier = 52, Constant = 53, DigitSequence = 54, StringLiteral = 55, 
-    Whitespace = 56, Newline = 57, BlockComment = 58, LineComment = 59
+    T__0 = 1, Break = 2, Case = 3, Char = 4, Continue = 5, Default = 6, 
+    Do = 7, Else = 8, For = 9, Goto = 10, If = 11, Int = 12, Long = 13, 
+    Return = 14, Short = 15, Switch = 16, Void = 17, While = 18, LeftParen = 19, 
+    RightParen = 20, LeftBracket = 21, RightBracket = 22, LeftBrace = 23, 
+    RightBrace = 24, Less = 25, LessEqual = 26, Greater = 27, GreaterEqual = 28, 
+    Plus = 29, PlusPlus = 30, Minus = 31, MinusMinus = 32, Star = 33, Div = 34, 
+    Mod = 35, AndAnd = 36, OrOr = 37, Not = 38, Question = 39, Colon = 40, 
+    Semi = 41, Comma = 42, Assign = 43, StarAssign = 44, DivAssign = 45, 
+    ModAssign = 46, PlusAssign = 47, MinusAssign = 48, Equal = 49, NotEqual = 50, 
+    Identifier = 51, Constant = 52, DigitSequence = 53, StringLiteral = 54, 
+    Whitespace = 55, Newline = 56, BlockComment = 57, LineComment = 58
   };
 
   enum {
@@ -31,18 +31,17 @@ public:
     RuleAdditiveExpression = 6, RuleRelationalExpression = 7, RuleEqualityExpression = 8, 
     RuleLogicalAndExpression = 9, RuleLogicalOrExpression = 10, RuleAssignmentExpression = 11, 
     RuleAssignmentOperator = 12, RuleExpression = 13, RuleConstantExpression = 14, 
-    RuleDeclaration = 15, RuleDeclarationSpecifier = 16, RuleInitDeclaratorList = 17, 
-    RuleInitDeclarator = 18, RuleDeclarator = 19, RuleDirectDeclarator = 20, 
-    RuleNestedParenthesesBlock = 21, RuleParameterTypeList = 22, RuleParameterList = 23, 
-    RuleParameterDeclaration = 24, RuleIdentifierList = 25, RuleAbstractDeclarator = 26, 
-    RuleDirectAbstractDeclarator = 27, RuleInitializer = 28, RuleInitializerList = 29, 
-    RuleDesignation = 30, RuleDesignatorList = 31, RuleDesignator = 32, 
-    RuleStatement = 33, RuleLabeledStatement = 34, RuleCompoundStatement = 35, 
-    RuleBlockItemList = 36, RuleBlockItem = 37, RuleExpressionStatement = 38, 
-    RuleSelectionStatement = 39, RuleIterationStatement = 40, RuleForCondition = 41, 
-    RuleForDeclaration = 42, RuleForExpression = 43, RuleJumpStatement = 44, 
-    RuleCompilationUnit = 45, RuleTranslationUnit = 46, RuleExternalDeclaration = 47, 
-    RuleFunctionDefinition = 48, RuleDeclarationList = 49
+    RuleDeclaration = 15, RuleDeclarationSpecifier = 16, RuleInitDeclarator = 17, 
+    RuleDeclarator = 18, RuleDirectDeclarator = 19, RuleNestedParenthesesBlock = 20, 
+    RuleParameterTypeList = 21, RuleParameterDeclaration = 22, RuleIdentifierList = 23, 
+    RuleAbstractDeclarator = 24, RuleDirectAbstractDeclarator = 25, RuleInitializer = 26, 
+    RuleInitializerList = 27, RuleDesignation = 28, RuleDesignatorList = 29, 
+    RuleDesignator = 30, RuleStatement = 31, RuleLabeledStatement = 32, 
+    RuleCompoundStatement = 33, RuleBlockItemList = 34, RuleBlockItem = 35, 
+    RuleExpressionStatement = 36, RuleSelectionStatement = 37, RuleIterationStatement = 38, 
+    RuleForCondition = 39, RuleForDeclaration = 40, RuleForExpression = 41, 
+    RuleJumpStatement = 42, RuleCompilationUnit = 43, RuleTranslationUnit = 44, 
+    RuleExternalDeclaration = 45, RuleFunctionDefinition = 46, RuleDeclarationList = 47
   };
 
   SimpleCParser(antlr4::TokenStream *input);
@@ -72,13 +71,11 @@ public:
   class ConstantExpressionContext;
   class DeclarationContext;
   class DeclarationSpecifierContext;
-  class InitDeclaratorListContext;
   class InitDeclaratorContext;
   class DeclaratorContext;
   class DirectDeclaratorContext;
   class NestedParenthesesBlockContext;
   class ParameterTypeListContext;
-  class ParameterListContext;
   class ParameterDeclarationContext;
   class IdentifierListContext;
   class AbstractDeclaratorContext;
@@ -355,7 +352,7 @@ public:
     DeclarationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     DeclarationSpecifierContext *declarationSpecifier();
-    InitDeclaratorListContext *initDeclaratorList();
+    InitDeclaratorContext *initDeclarator();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -381,22 +378,6 @@ public:
 
   DeclarationSpecifierContext* declarationSpecifier();
 
-  class  InitDeclaratorListContext : public antlr4::ParserRuleContext {
-  public:
-    InitDeclaratorListContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    InitDeclaratorContext *initDeclarator();
-    InitDeclaratorListContext *initDeclaratorList();
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  InitDeclaratorListContext* initDeclaratorList();
-  InitDeclaratorListContext* initDeclaratorList(int precedence);
   class  InitDeclaratorContext : public antlr4::ParserRuleContext {
   public:
     InitDeclaratorContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -434,7 +415,6 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *Identifier();
     DeclaratorContext *declarator();
-    antlr4::tree::TerminalNode *DigitSequence();
     DirectDeclaratorContext *directDeclarator();
     AssignmentExpressionContext *assignmentExpression();
     ParameterTypeListContext *parameterTypeList();
@@ -469,7 +449,8 @@ public:
   public:
     ParameterTypeListContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    ParameterListContext *parameterList();
+    ParameterDeclarationContext *parameterDeclaration();
+    ParameterTypeListContext *parameterTypeList();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -479,23 +460,7 @@ public:
   };
 
   ParameterTypeListContext* parameterTypeList();
-
-  class  ParameterListContext : public antlr4::ParserRuleContext {
-  public:
-    ParameterListContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    ParameterDeclarationContext *parameterDeclaration();
-    ParameterListContext *parameterList();
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  ParameterListContext* parameterList();
-  ParameterListContext* parameterList(int precedence);
+  ParameterTypeListContext* parameterTypeList(int precedence);
   class  ParameterDeclarationContext : public antlr4::ParserRuleContext {
   public:
     ParameterDeclarationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -800,7 +765,7 @@ public:
     ForDeclarationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     DeclarationSpecifierContext *declarationSpecifier();
-    InitDeclaratorListContext *initDeclaratorList();
+    InitDeclaratorContext *initDeclarator();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -935,9 +900,8 @@ public:
   bool logicalAndExpressionSempred(LogicalAndExpressionContext *_localctx, size_t predicateIndex);
   bool logicalOrExpressionSempred(LogicalOrExpressionContext *_localctx, size_t predicateIndex);
   bool expressionSempred(ExpressionContext *_localctx, size_t predicateIndex);
-  bool initDeclaratorListSempred(InitDeclaratorListContext *_localctx, size_t predicateIndex);
   bool directDeclaratorSempred(DirectDeclaratorContext *_localctx, size_t predicateIndex);
-  bool parameterListSempred(ParameterListContext *_localctx, size_t predicateIndex);
+  bool parameterTypeListSempred(ParameterTypeListContext *_localctx, size_t predicateIndex);
   bool identifierListSempred(IdentifierListContext *_localctx, size_t predicateIndex);
   bool directAbstractDeclaratorSempred(DirectAbstractDeclaratorContext *_localctx, size_t predicateIndex);
   bool initializerListSempred(InitializerListContext *_localctx, size_t predicateIndex);

@@ -65,9 +65,6 @@ public:
   virtual void enterDeclarationSpecifier(SimpleCParser::DeclarationSpecifierContext *ctx) = 0;
   virtual void exitDeclarationSpecifier(SimpleCParser::DeclarationSpecifierContext *ctx) = 0;
 
-  virtual void enterInitDeclaratorList(SimpleCParser::InitDeclaratorListContext *ctx) = 0;
-  virtual void exitInitDeclaratorList(SimpleCParser::InitDeclaratorListContext *ctx) = 0;
-
   virtual void enterInitDeclarator(SimpleCParser::InitDeclaratorContext *ctx) = 0;
   virtual void exitInitDeclarator(SimpleCParser::InitDeclaratorContext *ctx) = 0;
 
@@ -82,9 +79,6 @@ public:
 
   virtual void enterParameterTypeList(SimpleCParser::ParameterTypeListContext *ctx) = 0;
   virtual void exitParameterTypeList(SimpleCParser::ParameterTypeListContext *ctx) = 0;
-
-  virtual void enterParameterList(SimpleCParser::ParameterListContext *ctx) = 0;
-  virtual void exitParameterList(SimpleCParser::ParameterListContext *ctx) = 0;
 
   virtual void enterParameterDeclaration(SimpleCParser::ParameterDeclarationContext *ctx) = 0;
   virtual void exitParameterDeclaration(SimpleCParser::ParameterDeclarationContext *ctx) = 0;

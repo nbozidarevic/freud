@@ -53,8 +53,6 @@ public:
 
     virtual antlrcpp::Any visitDeclarationSpecifier(SimpleCParser::DeclarationSpecifierContext *context) = 0;
 
-    virtual antlrcpp::Any visitInitDeclaratorList(SimpleCParser::InitDeclaratorListContext *context) = 0;
-
     virtual antlrcpp::Any visitInitDeclarator(SimpleCParser::InitDeclaratorContext *context) = 0;
 
     virtual antlrcpp::Any visitDeclarator(SimpleCParser::DeclaratorContext *context) = 0;
@@ -64,8 +62,6 @@ public:
     virtual antlrcpp::Any visitNestedParenthesesBlock(SimpleCParser::NestedParenthesesBlockContext *context) = 0;
 
     virtual antlrcpp::Any visitParameterTypeList(SimpleCParser::ParameterTypeListContext *context) = 0;
-
-    virtual antlrcpp::Any visitParameterList(SimpleCParser::ParameterListContext *context) = 0;
 
     virtual antlrcpp::Any visitParameterDeclaration(SimpleCParser::ParameterDeclarationContext *context) = 0;
 

@@ -116,7 +116,7 @@ constantExpression
     ;
 
 declaration
-    :   declarationSpecifier initDeclaratorList ';'
+    :   declarationSpecifier initDeclarator ';'
     | 	declarationSpecifier ';'
     ;
 
@@ -126,11 +126,6 @@ declarationSpecifier
     |   'short'
     |   'int')
     |   Identifier
-    ;
-
-initDeclaratorList
-    :   initDeclarator
-    |   initDeclaratorList ',' initDeclarator
     ;
 
 initDeclarator
@@ -148,7 +143,6 @@ directDeclarator
     |   directDeclarator '[' assignmentExpression? ']'
     |   directDeclarator '(' parameterTypeList ')'
     |   directDeclarator '(' identifierList? ')'
-    |   Identifier ':' DigitSequence  // bit field
     ;
 
 nestedParenthesesBlock
@@ -158,13 +152,8 @@ nestedParenthesesBlock
     ;
 
 parameterTypeList
-    :   parameterList
-    |   parameterList ',' '...'
-    ;
-
-parameterList
     :   parameterDeclaration
-    |   parameterList ',' parameterDeclaration
+    |   parameterTypeList ',' parameterDeclaration
     ;
 
 parameterDeclaration
@@ -263,7 +252,7 @@ forCondition
   	;
 
 forDeclaration
-    :   declarationSpecifier initDeclaratorList
+    :   declarationSpecifier initDeclarator
 	  | 	declarationSpecifier
     ;
 
