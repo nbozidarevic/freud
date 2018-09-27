@@ -31,3 +31,11 @@ run file
 
   Executes the specified Brainfuck program.
 ```
+```
+compile file [-o output-file]
+
+  Compiles the specified C program to Brainfuck.
+
+  If no output file is specified, the standard
+  output is used.
+```
