@@ -14,8 +14,8 @@ SOURCE_EXT := cpp
 GRAMMAR_EXT := g4
 
 ANTLR_LIBRARY := $(LIBRARIES_DIR)/libantlr4-runtime.a
-GRAMMARS := $(shell find $(SOURCES_DIR) -type f -name *.$(GRAMMAR_EXT))
-SOURCES := $(shell find $(SOURCES_DIR) -type f -name *.$(SOURCE_EXT))
+GRAMMARS := $(shell find $(SOURCES_DIR) -type f -name "*.$(GRAMMAR_EXT)")
+SOURCES := $(shell find $(SOURCES_DIR) -type f -name "*.$(SOURCE_EXT)")
 OBJECTS := $(patsubst $(SOURCES_DIR)/%,$(OBJECTS_DIR)/%,$(SOURCES:.$(SOURCE_EXT)=.o))
 
 TARGET := bin/freud

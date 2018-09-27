@@ -3,7 +3,7 @@
 BrainfuckMemory::BrainfuckMemory() {}
 
 int BrainfuckMemory::getTemporaryCell() {
-  return nextAvailableCell;
+  return nextAvailableCell++;
 }
 
 int BrainfuckMemory::getVariableCell(string name) {
