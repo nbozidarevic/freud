@@ -20,10 +20,14 @@ void BrainfuckCompiler::run() {
   visitCompilationUnit(tree);
   output << endl;
   output << endl << tree->toStringTree(&parser) << endl;
+  output << endl << memory.getVariableCell("a") << endl;
 }
 
-void BrainfuckCompiler::copyValue(int source, int destination) {
+int BrainfuckCompiler::copyValue(int source, int destination) {
+  output << endl << "Copy from " << source << " to " << destination << endl;
   int helperPointer = memory.getTemporaryCell();
+  movePointer(destination);
+  output << "[-]";
   movePointer(source);
   output << "[-";
   movePointer(destination);
@@ -38,11 +42,23 @@ void BrainfuckCompiler::copyValue(int source, int destination) {
   output << "+";
   movePointer(helperPointer);
   output << "]";
+  return destination;
 }
 
 int BrainfuckCompiler::duplicateValue(int source) {
   int destination = memory.getTemporaryCell();
+  // output << endl << "Duplicate value at " << source << " to " << destination << endl;
   copyValue(source, destination);
+  return destination;
+}
+
+int BrainfuckCompiler::setValue(int destination, int value) {
+  output << endl << "Set value at " << destination << " to " << value << endl;
+  movePointer(destination);
+  output << "[-]";
+  for (int i = 0; i < value; ++i) {
+    cout << "+";
+  }
   return destination;
 }
 
@@ -62,12 +78,7 @@ void BrainfuckCompiler::movePointer(int destination) {
 
 int BrainfuckCompiler::getPointerForConstValue(char value) {
   int pointer = memory.getTemporaryCell();
-  movePointer(pointer);
-  cout << "[-]";
-  for (char i = 0; i < value; ++i) {
-    cout << "+";
-  }
-  return pointer;
+  return setValue(pointer, value);
 }
 
 int BrainfuckCompiler::addValues(int a, int b) {
@@ -118,6 +129,40 @@ int BrainfuckCompiler::multiplyValues(int a, int b) {
   return result;
 }
 
+int BrainfuckCompiler::negate(int a) {
+  int result = memory.getTemporaryCell();
+  output << endl << "Negate value at " << a << " and store at " << result << endl;
+  performIfElse(
+    a,
+    [&]() -> void {
+      this->setValue(result, 0);
+    },
+    [&]() -> void {
+      this->setValue(result, 1);
+    }
+  );
+  return result;
+}
+
+void BrainfuckCompiler::performIfElse(int expression, function<void ()> ifFn, function<void ()> elseFn) {
+  output << endl << "Perform IF/ELSE depending on value at " << expression << endl;
+  int ifValue = duplicateValue(expression);
+  int elseValue = getPointerForConstValue(1);
+  movePointer(ifValue);
+  output << "[";
+  setValue(ifValue, 0);
+  setValue(elseValue, 0);
+  ifFn();
+  movePointer(ifValue);
+  output << "]";
+  movePointer(elseValue);
+  output << "[";
+  setValue(elseValue, 0);
+  elseFn();
+  movePointer(elseValue);
+  output << "]";
+}
+
 antlrcpp::Any BrainfuckCompiler::visitAdditiveExpression(SimpleCParser::AdditiveExpressionContext *ctx) {
   if (ctx->children.size() == 1) {
     SimpleCParser::MultiplicativeExpressionContext *multiplicativeExpression = dynamic_cast<SimpleCParser::MultiplicativeExpressionContext*>(ctx->children[0]);
@@ -146,6 +191,13 @@ antlrcpp::Any BrainfuckCompiler::visitAssignmentExpression(SimpleCParser::Assign
     if (logicalOrExpression) {
       return visitLogicalOrExpression(logicalOrExpression);
     }
+  } else if (ctx->children.size() == 3) {
+    if (ctx->assignmentOperator()->getText() == "=") {
+      return copyValue(
+        ctx->assignmentExpression()->accept(this),
+        ctx->unaryExpression()->accept(this)
+      );
+    }    
   }
   throw "Unsupported assignment expression";
 }
@@ -158,6 +210,15 @@ antlrcpp::Any BrainfuckCompiler::visitDirectDeclarator(SimpleCParser::DirectDecl
   if (ctx->Identifier()) {
     return memory.getVariableCell(ctx->Identifier()->getText());
   }
+  SimpleCParser::DirectDeclaratorContext *directDeclarator = dynamic_cast<SimpleCParser::DirectDeclaratorContext*>(ctx->children[0]);
+  if (directDeclarator) {
+    if (ctx->children[1]->getText() == "(" && ctx->children[2]->getText() == ")") {
+      if (directDeclarator->getText() == "main") {
+        return true;
+      }
+    }
+  }
+
   throw "Unsupported direct declarator";
 }
 
@@ -169,6 +230,13 @@ antlrcpp::Any BrainfuckCompiler::visitEqualityExpression(SimpleCParser::Equality
     }
   }
   throw "Unsupported equality expression";
+}
+
+antlrcpp::Any BrainfuckCompiler::visitFunctionDefinition(SimpleCParser::FunctionDefinitionContext *ctx) {
+  if (ctx->declarator()->directDeclarator()->directDeclarator()->getText() == "main") {
+    return ctx->compoundStatement()->accept(this);
+  }
+  throw "Unsupported function definition";
 }
 
 antlrcpp::Any BrainfuckCompiler::visitInitializer(SimpleCParser::InitializerContext *ctx) {
@@ -278,9 +346,36 @@ antlrcpp::Any BrainfuckCompiler::visitSimpleExpression(SimpleCParser::SimpleExpr
   throw "Unsupported simple expression";
 }
 
+antlrcpp::Any BrainfuckCompiler::visitSelectionStatement(SimpleCParser::SelectionStatementContext *ctx) {
+  if (ctx->children[0]->getText() == "if") {
+    SimpleCParser::StatementContext *ifStatement = dynamic_cast<SimpleCParser::StatementContext*>(ctx->children[4]);
+    SimpleCParser::StatementContext *elseStatement = NULL;
+    if (ctx->children.size() == 7) {
+      elseStatement = dynamic_cast<SimpleCParser::StatementContext*>(ctx->children[6]);
+    }
+
+    performIfElse(
+      ctx->expression()->accept(this),
+      [&]() -> void {
+        ifStatement->accept(this);
+      },
+      [&]() -> void {
+        if (elseStatement) {
+          elseStatement->accept(this);
+        } 
+      }
+    );
+    return NULL;
+  }
+  throw "Unsupported selection statement";
+}
+
 antlrcpp::Any BrainfuckCompiler::visitUnaryExpression(SimpleCParser::UnaryExpressionContext *ctx) {
   if (ctx->postfixExpression()) {
     return visitPostfixExpression(ctx->postfixExpression());
+  }
+  if (ctx->children[0]->getText() == "!") {
+    return negate(ctx->unaryExpression()->accept(this));
   }
   throw "Unsupported unary expression";
 }

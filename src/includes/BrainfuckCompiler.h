@@ -20,20 +20,25 @@ private:
   BrainfuckMemory memory;
   int pointer;
 
-  void copyValue(int source, int destination);
+  int copyValue(int source, int destination);
   int duplicateValue(int source);
   int getPointerForConstValue(char value);
   void movePointer(int destination);
+  int setValue(int destination, int value);
 
   int addValues(int a, int b);
   int subtractValues(int a, int b);
   int multiplyValues(int a, int b);
+  int negate(int a);
+
+  void performIfElse(int expression, function<void ()> ifFn, function<void ()> elseFn);
 
   antlrcpp::Any visitAdditiveExpression(SimpleCParser::AdditiveExpressionContext *ctx);
   antlrcpp::Any visitAssignmentExpression(SimpleCParser::AssignmentExpressionContext *ctx);
   antlrcpp::Any visitDeclarator(SimpleCParser::DeclaratorContext *ctx);
   antlrcpp::Any visitDirectDeclarator(SimpleCParser::DirectDeclaratorContext *ctx);
   antlrcpp::Any visitEqualityExpression(SimpleCParser::EqualityExpressionContext *ctx);
+  antlrcpp::Any visitFunctionDefinition(SimpleCParser::FunctionDefinitionContext *ctx);
   antlrcpp::Any visitInitializer(SimpleCParser::InitializerContext *ctx);
   antlrcpp::Any visitInitDeclarator(SimpleCParser::InitDeclaratorContext *ctx);
   antlrcpp::Any visitLogicalAndExpression(SimpleCParser::LogicalAndExpressionContext *ctx);
@@ -43,6 +48,7 @@ private:
   antlrcpp::Any visitPrimaryExpression(SimpleCParser::PrimaryExpressionContext *ctx);
   antlrcpp::Any visitRelationalExpression(SimpleCParser::RelationalExpressionContext *ctx);
   antlrcpp::Any visitSimpleExpression(SimpleCParser::SimpleExpressionContext *ctx);
+  antlrcpp::Any visitSelectionStatement(SimpleCParser::SelectionStatementContext *ctx);
   antlrcpp::Any visitUnaryExpression(SimpleCParser::UnaryExpressionContext *ctx);
 };
 
