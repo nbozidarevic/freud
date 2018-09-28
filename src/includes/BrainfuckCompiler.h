@@ -23,7 +23,7 @@ private:
   int copyValue(int source, int destination);
   int moveValue(int source, int destination);
   int duplicateValue(int source);
-  int getPointerForConstValue(char value);
+  int getPointerForConstValue(unsigned char value);
   void movePointer(int destination);
   int setValue(int destination, int value);
 
@@ -51,8 +51,12 @@ private:
   );
 
   void printAsChar(int a);
+  void printAsDigit(int a);
+  void printAsNumber(int a);
+  void printChar(unsigned char c);
 
   antlrcpp::Any visitAdditiveExpression(SimpleCParser::AdditiveExpressionContext *ctx);
+  antlrcpp::Any visitArgumentExpressionList(SimpleCParser::ArgumentExpressionListContext *ctx);
   antlrcpp::Any visitAssignmentExpression(SimpleCParser::AssignmentExpressionContext *ctx);
   antlrcpp::Any visitDeclarator(SimpleCParser::DeclaratorContext *ctx);
   antlrcpp::Any visitDirectDeclarator(SimpleCParser::DirectDeclaratorContext *ctx);

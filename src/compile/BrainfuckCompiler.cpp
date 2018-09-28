@@ -83,7 +83,7 @@ void BrainfuckCompiler::movePointer(int destination) {
   if (pointer == destination) {
     return;
   }
-  char c = '>';
+  unsigned char c = '>';
   if (pointer > destination) {
     c = '<';
   }
@@ -93,7 +93,7 @@ void BrainfuckCompiler::movePointer(int destination) {
   pointer = destination;
 }
 
-int BrainfuckCompiler::getPointerForConstValue(char value) {
+int BrainfuckCompiler::getPointerForConstValue(unsigned char value) {
   int pointer = memory.getTemporaryCell();
   return setValue(pointer, value);
 }
@@ -349,6 +349,44 @@ void BrainfuckCompiler::printAsChar(int a) {
   output << ".";
 }
 
+void BrainfuckCompiler::printAsNumber(int a) {
+  int aCopy = duplicateValue(a);
+  int digit = duplicateValue(a);
+  int helperPointer = getPointerForConstValue(0);
+  int zeroChar = getPointerForConstValue('0');
+  int nine = getPointerForConstValue(9);
+  int ten = getPointerForConstValue(10);
+  performWhile(
+    [&]() -> int {
+      return aCopy;
+    },
+    [&]() -> void {
+      this->setValue(helperPointer, 1);
+      this->copyValue(aCopy, digit);
+      performWhile(
+        [&]() -> int {
+          return greaterThan(digit, nine);
+        },
+        [&]() -> void {
+          this->moveValue(this->divideValues(digit, ten), digit);
+          this->moveValue(this->multiplyValues(helperPointer, ten), helperPointer);
+        }
+      );
+      this->printAsChar(this->addValues(digit, zeroChar));
+      this->moveValue(
+        this->subtractValues(aCopy, this->multiplyValues(digit, helperPointer)),
+        aCopy
+      );
+    }
+  );
+}
+
+void BrainfuckCompiler::printChar(unsigned char c) {
+  int a = getPointerForConstValue(c);
+  movePointer(a);
+  output << ".";
+}
+
 antlrcpp::Any BrainfuckCompiler::visitAdditiveExpression(SimpleCParser::AdditiveExpressionContext *ctx) {
   if (ctx->children.size() == 1) {
     SimpleCParser::MultiplicativeExpressionContext *multiplicativeExpression = dynamic_cast<SimpleCParser::MultiplicativeExpressionContext*>(ctx->children[0]);
@@ -369,6 +407,16 @@ antlrcpp::Any BrainfuckCompiler::visitAdditiveExpression(SimpleCParser::Additive
     }
   }
   throw "Unsupported additive expression";
+}
+
+antlrcpp::Any BrainfuckCompiler::visitArgumentExpressionList(SimpleCParser::ArgumentExpressionListContext *ctx) {
+  vector<antlrcpp::Any> list;
+  if (ctx->argumentExpressionList()) {
+    vector<antlrcpp::Any> preList = ctx->argumentExpressionList()->accept(this);
+    list.insert(list.end(), preList.begin(), preList.end());
+  }
+  list.push_back(ctx->assignmentExpression()->accept(this));
+  return list;
 }
 
 antlrcpp::Any BrainfuckCompiler::visitAssignmentExpression(SimpleCParser::AssignmentExpressionContext *ctx) {
@@ -579,13 +627,50 @@ antlrcpp::Any BrainfuckCompiler::visitPostfixExpression(SimpleCParser::PostfixEx
   }
   if (ctx->children[1]->getText() == "(") {
     if (ctx->postfixExpression()->getText() == "printf") {
-      printAsChar(memory.getVariableCell("a"));
-      // printAsChar(memory.getVariableCell("b"));
+      vector<antlrcpp::Any> allParams;
+      if (ctx->argumentExpressionList()) {
+        vector<antlrcpp::Any> params = ctx->argumentExpressionList()->accept(this);
+        allParams.insert(allParams.end(), params.begin(), params.end());
+      }
+      if (allParams.size() > 0) {
+        string formatString = allParams[0];
+        int nextVariable = 1;
+        int pointer;
+        for (int i = 1; i < formatString.length() - 1; ++i) {
+          switch (formatString[i]) {
+            case '\\':
+              switch (formatString[i+1]) {
+                case 'n':
+                  printChar('\n');
+                  break;
+                case 't':
+                  printChar('\t');
+                  break;
+                default:
+                  throw "Incorrect backslash in printf";
+              }
+              ++i;
+              break;
+            case '%':
+              pointer = allParams[nextVariable++];
+              switch (formatString[i+1]) {
+                case 'c':
+                  printAsChar(pointer);
+                  break;
+                case 'd':
+                  printAsNumber(pointer);
+                  break;
+                default:
+                  throw "Unexpected printf format";
+              }
+              ++i;
+              break;
+            default:
+              printChar(formatString[i]);
+          }
+        }
+      }
       return NULL;
-      // vector<antlrcpp::Any> arguments;
-      // if (ctx->argumentExpressionList()) {
-      //   arguments = (vector<antlrcpp::Any>)(ctx->argumentExpressionList()->accept(this));
-      // }
     }
   }
   throw "Unsupported postfix expression";
@@ -604,6 +689,8 @@ antlrcpp::Any BrainfuckCompiler::visitPrimaryExpression(SimpleCParser::PrimaryEx
     // If it is an identifier, return its mmoery address
     string name = ctx->Identifier()->getText();
     return memory.getVariableCell(name);
+  } else if (ctx->StringLiteral()[0]) {
+    return ctx->StringLiteral()[0]->getText();
   }
   throw "Unsupported primary expression";
 }
