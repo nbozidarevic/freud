@@ -30,8 +30,16 @@ private:
   int subtractValues(int a, int b);
   int multiplyValues(int a, int b);
   int negate(int a);
+  int isEqual(int a, int b);
+  int logicalAnd(int a, int b);
+  int logicalOr(int a, int b);
+  int lessThan(int a, int b);
+  int lessThanOrEqual(int a, int b);
+  int greaterThan(int a, int b);
+  int greaterThanOrEqual(int a, int b);
 
   void performIfElse(int expression, function<void ()> ifFn, function<void ()> elseFn);
+  void performWhile(function<int ()> expressionFn, function<void ()> loopFn);
 
   antlrcpp::Any visitAdditiveExpression(SimpleCParser::AdditiveExpressionContext *ctx);
   antlrcpp::Any visitAssignmentExpression(SimpleCParser::AssignmentExpressionContext *ctx);
@@ -41,6 +49,7 @@ private:
   antlrcpp::Any visitFunctionDefinition(SimpleCParser::FunctionDefinitionContext *ctx);
   antlrcpp::Any visitInitializer(SimpleCParser::InitializerContext *ctx);
   antlrcpp::Any visitInitDeclarator(SimpleCParser::InitDeclaratorContext *ctx);
+  antlrcpp::Any visitIterationStatement(SimpleCParser::IterationStatementContext *ctx);
   antlrcpp::Any visitLogicalAndExpression(SimpleCParser::LogicalAndExpressionContext *ctx);
   antlrcpp::Any visitLogicalOrExpression(SimpleCParser::LogicalOrExpressionContext *ctx);
   antlrcpp::Any visitMultiplicativeExpression(SimpleCParser::MultiplicativeExpressionContext *ctx);

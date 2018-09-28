@@ -24,7 +24,6 @@ void BrainfuckCompiler::run() {
 }
 
 int BrainfuckCompiler::copyValue(int source, int destination) {
-  output << endl << "Copy from " << source << " to " << destination << endl;
   int helperPointer = memory.getTemporaryCell();
   movePointer(destination);
   output << "[-]";
@@ -47,13 +46,11 @@ int BrainfuckCompiler::copyValue(int source, int destination) {
 
 int BrainfuckCompiler::duplicateValue(int source) {
   int destination = memory.getTemporaryCell();
-  // output << endl << "Duplicate value at " << source << " to " << destination << endl;
   copyValue(source, destination);
   return destination;
 }
 
 int BrainfuckCompiler::setValue(int destination, int value) {
-  output << endl << "Set value at " << destination << " to " << value << endl;
   movePointer(destination);
   output << "[-]";
   for (int i = 0; i < value; ++i) {
@@ -131,7 +128,6 @@ int BrainfuckCompiler::multiplyValues(int a, int b) {
 
 int BrainfuckCompiler::negate(int a) {
   int result = memory.getTemporaryCell();
-  output << endl << "Negate value at " << a << " and store at " << result << endl;
   performIfElse(
     a,
     [&]() -> void {
@@ -144,8 +140,108 @@ int BrainfuckCompiler::negate(int a) {
   return result;
 }
 
+int BrainfuckCompiler::isEqual(int a, int b) {
+  int aCopy = duplicateValue(a);
+  int bCopy = duplicateValue(b);
+  int result = getPointerForConstValue(0);
+  movePointer(aCopy);
+  output << "[-";
+  movePointer(bCopy);
+  output << "-";
+  movePointer(aCopy);
+  output << "]";
+  performIfElse(
+    negate(aCopy),
+    [&]() -> void {
+      this->performIfElse(
+        this->negate(bCopy),
+        [&]() -> void {
+          setValue(result, 1);
+        },
+        []() -> void {}
+      );
+    },
+    []() -> void {}
+  );
+  return result;
+}
+
+int BrainfuckCompiler::logicalAnd(int a, int b) {
+  int result = getPointerForConstValue(0);
+  performIfElse(
+    a,
+    [&]() -> void {
+      this->performIfElse(
+        b,
+        [&]() -> void {
+          setValue(result, 1);
+        },
+        []() -> void {}
+      );
+    },
+    []() -> void {}
+  );
+  return result;
+}
+
+int BrainfuckCompiler::logicalOr(int a, int b) {
+  int result = getPointerForConstValue(0);
+  this->performIfElse(
+    a,
+    [&]() -> void {
+      setValue(result, 1);
+    },
+    []() -> void {}
+  );
+  this->performIfElse(
+    b,
+    [&]() -> void {
+      setValue(result, 1);
+    },
+    []() -> void {}
+  );
+  return result;
+}
+
+int BrainfuckCompiler::lessThan(int a, int b) {
+  int aCopy = duplicateValue(a);
+  int bCopy = duplicateValue(b);
+  int result = memory.getTemporaryCell();
+  performWhile(
+    [&]() -> int {
+      return logicalAnd(aCopy, bCopy);
+    },
+    [&]() -> void {
+      this->movePointer(aCopy);
+      output << "-";
+      this->movePointer(bCopy);
+      output << "-";
+    }
+  );
+  performIfElse(
+    logicalAnd(negate(aCopy), bCopy),
+    [&]() -> void {
+      this->setValue(result, 1);
+    },
+    []() -> void {}
+  );
+  return result;
+  // TODO while loop
+}
+int BrainfuckCompiler::lessThanOrEqual(int a, int b) {
+  return logicalOr(
+    lessThan(a, b),
+    isEqual(a, b)
+  );
+}
+int BrainfuckCompiler::greaterThan(int a, int b) {
+  return negate(lessThanOrEqual(a, b));
+}
+int BrainfuckCompiler::greaterThanOrEqual(int a, int b) {
+  return negate(lessThan(a, b));
+}
+
 void BrainfuckCompiler::performIfElse(int expression, function<void ()> ifFn, function<void ()> elseFn) {
-  output << endl << "Perform IF/ELSE depending on value at " << expression << endl;
   int ifValue = duplicateValue(expression);
   int elseValue = getPointerForConstValue(1);
   movePointer(ifValue);
@@ -160,6 +256,17 @@ void BrainfuckCompiler::performIfElse(int expression, function<void ()> ifFn, fu
   setValue(elseValue, 0);
   elseFn();
   movePointer(elseValue);
+  output << "]";
+}
+
+void BrainfuckCompiler::performWhile(function<int ()> expressionFn, function<void ()> loopFn) {
+  int expression = expressionFn();
+  movePointer(expression);
+  output << "[";
+  loopFn();
+  int newExpression = expressionFn();
+  copyValue(newExpression, expression);
+  movePointer(expression);
   output << "]";
 }
 
@@ -229,6 +336,18 @@ antlrcpp::Any BrainfuckCompiler::visitEqualityExpression(SimpleCParser::Equality
       return visitRelationalExpression(relationalExpression);
     }
   }
+  if (ctx->children[1]->getText() == "==") {
+    return isEqual(
+      ctx->equalityExpression()->accept(this),
+      ctx->relationalExpression()->accept(this)
+    );
+  }
+  if (ctx->children[1]->getText() == "!=") {
+    return negate(isEqual(
+      ctx->equalityExpression()->accept(this),
+      ctx->relationalExpression()->accept(this)
+    ));
+  }
   throw "Unsupported equality expression";
 }
 
@@ -263,6 +382,21 @@ antlrcpp::Any BrainfuckCompiler::visitInitDeclarator(SimpleCParser::InitDeclarat
   throw "Unsupported init declarator";
 }
 
+antlrcpp::Any BrainfuckCompiler::visitIterationStatement(SimpleCParser::IterationStatementContext *ctx) {
+  if (ctx->While()) {
+    performWhile(
+      [&]() -> int {
+        return ctx->expression()->accept(this);
+      },
+      [&]() -> void {
+        ctx->statement()->accept(this);
+      }
+    );
+    return NULL;
+  }
+  throw "Unsupported iteration statement";
+}
+
 antlrcpp::Any BrainfuckCompiler::visitLogicalAndExpression(SimpleCParser::LogicalAndExpressionContext *ctx) {
   if (ctx->children.size() == 1) {
     SimpleCParser::EqualityExpressionContext *equalityExpression = dynamic_cast<SimpleCParser::EqualityExpressionContext*>(ctx->children[0]);
@@ -270,6 +404,10 @@ antlrcpp::Any BrainfuckCompiler::visitLogicalAndExpression(SimpleCParser::Logica
       return visitEqualityExpression(equalityExpression);
     }
   }
+  return logicalAnd(
+    ctx->logicalAndExpression()->accept(this),
+    ctx->equalityExpression()->accept(this)
+  );
   throw "Unsupported logical AND expression";
 }
 
@@ -280,6 +418,10 @@ antlrcpp::Any BrainfuckCompiler::visitLogicalOrExpression(SimpleCParser::Logical
       return visitLogicalAndExpression(logicalAndExpression);
     }
   }
+  return logicalOr(
+    ctx->logicalOrExpression()->accept(this),
+    ctx->logicalAndExpression()->accept(this)
+  );
   throw "Unsupported logical OR expression";
 }
 
@@ -333,6 +475,30 @@ antlrcpp::Any BrainfuckCompiler::visitRelationalExpression(SimpleCParser::Relati
     if (additiveExpression) {
       return visitAdditiveExpression(additiveExpression);
     }
+  }
+  if (ctx->children[1]->getText() == "<") {
+    return lessThan(
+      ctx->relationalExpression()->accept(this),
+      ctx->additiveExpression()->accept(this)
+    );
+  }
+  if (ctx->children[1]->getText() == "<=") {
+    return lessThanOrEqual(
+      ctx->relationalExpression()->accept(this),
+      ctx->additiveExpression()->accept(this)
+    );
+  }
+  if (ctx->children[1]->getText() == ">") {
+    return greaterThan(
+      ctx->relationalExpression()->accept(this),
+      ctx->additiveExpression()->accept(this)
+    );
+  }
+  if (ctx->children[1]->getText() == ">=") {
+    return greaterThanOrEqual(
+      ctx->relationalExpression()->accept(this),
+      ctx->additiveExpression()->accept(this)
+    );
   }
   throw "Unsupported relational expression";
 }
