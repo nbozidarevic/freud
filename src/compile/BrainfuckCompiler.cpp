@@ -25,7 +25,12 @@ void BrainfuckCompiler::run() {
 
 int BrainfuckCompiler::copyValue(int source, int destination) {
   output << endl << "Copy value from " << source << " to " << destination << endl;
+  if (source == destination) {
+    return destination;
+  }
   int helperPointer = memory.getTemporaryCell();
+  movePointer(helperPointer);
+  output << "[-]";
   movePointer(destination);
   output << "[-]";
   movePointer(source);
@@ -47,6 +52,9 @@ int BrainfuckCompiler::copyValue(int source, int destination) {
 
 int BrainfuckCompiler::moveValue(int source, int destination) {
   output << endl << "Move value from " << source << " to " << destination << endl;
+  if (source == destination) {
+    return destination;
+  }
   movePointer(destination);
   output << "[-]";
   movePointer(source);
@@ -89,6 +97,7 @@ void BrainfuckCompiler::movePointer(int destination) {
 
 int BrainfuckCompiler::getPointerForConstValue(char value) {
   int pointer = memory.getTemporaryCell();
+  output << endl << "Put the value " << (int)value << " into " << pointer << endl;
   return setValue(pointer, value);
 }
 
@@ -96,6 +105,9 @@ int BrainfuckCompiler::addValues(int a, int b) {
   int aCopy = duplicateValue(a);
   int bCopy = duplicateValue(b);
   int result = memory.getTemporaryCell();
+  output << endl << "Add values at " << aCopy << " and " << bCopy << " and put them in" << result << endl;
+  movePointer(result);
+  output << "[-]";
   movePointer(aCopy);
   output << "[-";
   movePointer(result);
@@ -114,6 +126,8 @@ int BrainfuckCompiler::subtractValues(int a, int b) {
   int aCopy = duplicateValue(a);
   int bCopy = duplicateValue(b);
   int result = memory.getTemporaryCell();
+  movePointer(result);
+  output << "[-]";
   movePointer(aCopy);
   output << "[-";
   movePointer(result);
@@ -132,6 +146,8 @@ int BrainfuckCompiler::subtractValues(int a, int b) {
 int BrainfuckCompiler::multiplyValues(int a, int b) {
   int aCopy = duplicateValue(a);
   int result = memory.getTemporaryCell();
+  movePointer(result);
+  output << "[-]";
   movePointer(aCopy);
   output << "[-";
   result = addValues(b, result);
@@ -237,6 +253,8 @@ int BrainfuckCompiler::lessThan(int a, int b) {
   int aCopy = duplicateValue(a);
   int bCopy = duplicateValue(b);
   int result = memory.getTemporaryCell();
+  movePointer(result);
+  output << "[-]";
   performWhile(
     [&]() -> int {
       return logicalAnd(aCopy, bCopy);
