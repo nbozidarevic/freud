@@ -19,12 +19,11 @@ void BrainfuckCompiler::run() {
   output << endl;
   visitCompilationUnit(tree);
   output << endl;
-  output << endl << tree->toStringTree(&parser) << endl;
-  output << endl << memory.getVariableCell("a") << endl;
+  // output << endl << tree->toStringTree(&parser) << endl;
+  // output << endl << memory.getVariableCell("a") << endl;
 }
 
 int BrainfuckCompiler::copyValue(int source, int destination) {
-  output << endl << "Copy value from " << source << " to " << destination << endl;
   if (source == destination) {
     return destination;
   }
@@ -51,7 +50,6 @@ int BrainfuckCompiler::copyValue(int source, int destination) {
 }
 
 int BrainfuckCompiler::moveValue(int source, int destination) {
-  output << endl << "Move value from " << source << " to " << destination << endl;
   if (source == destination) {
     return destination;
   }
@@ -97,7 +95,6 @@ void BrainfuckCompiler::movePointer(int destination) {
 
 int BrainfuckCompiler::getPointerForConstValue(char value) {
   int pointer = memory.getTemporaryCell();
-  output << endl << "Put the value " << (int)value << " into " << pointer << endl;
   return setValue(pointer, value);
 }
 
@@ -105,7 +102,6 @@ int BrainfuckCompiler::addValues(int a, int b) {
   int aCopy = duplicateValue(a);
   int bCopy = duplicateValue(b);
   int result = memory.getTemporaryCell();
-  output << endl << "Add values at " << aCopy << " and " << bCopy << " and put them in" << result << endl;
   movePointer(result);
   output << "[-]";
   movePointer(aCopy);
@@ -166,7 +162,7 @@ int BrainfuckCompiler::divideValues(int a, int b) {
     [&]() -> void {
       this->movePointer(result);
       this->output << "+";
-      this->setValue(aCopy, this->subtractValues(aCopy, b));
+      this->moveValue(this->subtractValues(aCopy, b), aCopy);
     }
   );
   return result;
@@ -307,22 +303,15 @@ void BrainfuckCompiler::performIfElse(int expression, function<void ()> ifFn, fu
 }
 
 void BrainfuckCompiler::performWhile(function<int ()> expressionFn, function<void ()> loopFn) {
-  output << endl << "Starting while" << endl;
   int expression = expressionFn();
   movePointer(expression);
   output << "[";
   movePointer(expression);
-  output << endl << "Loop FN start" << endl;
   loopFn();
-  output << endl << "Loop FN end" << endl;
-  output << endl << "Expression FN start" << endl;
   int newExpression = expressionFn();
-  output << endl << "Expression FN end" << endl;
   moveValue(newExpression, expression);
-  output << endl << "Copied the new expression value" << endl;
   movePointer(expression);
   output << "]";
-  output << endl << "Ending while" << endl;
 }
 
 void BrainfuckCompiler::printAsChar(int a) {
