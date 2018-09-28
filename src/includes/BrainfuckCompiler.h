@@ -21,6 +21,7 @@ private:
   int pointer;
 
   int copyValue(int source, int destination);
+  int moveValue(int source, int destination);
   int duplicateValue(int source);
   int getPointerForConstValue(char value);
   void movePointer(int destination);
@@ -29,6 +30,7 @@ private:
   int addValues(int a, int b);
   int subtractValues(int a, int b);
   int multiplyValues(int a, int b);
+  int divideValues(int a, int b);
   int negate(int a);
   int isEqual(int a, int b);
   int logicalAnd(int a, int b);
@@ -40,6 +42,8 @@ private:
 
   void performIfElse(int expression, function<void ()> ifFn, function<void ()> elseFn);
   void performWhile(function<int ()> expressionFn, function<void ()> loopFn);
+
+  void printAsChar(int a);
 
   antlrcpp::Any visitAdditiveExpression(SimpleCParser::AdditiveExpressionContext *ctx);
   antlrcpp::Any visitAssignmentExpression(SimpleCParser::AssignmentExpressionContext *ctx);

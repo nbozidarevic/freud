@@ -24,6 +24,7 @@ void BrainfuckCompiler::run() {
 }
 
 int BrainfuckCompiler::copyValue(int source, int destination) {
+  output << endl << "Copy value from " << source << " to " << destination << endl;
   int helperPointer = memory.getTemporaryCell();
   movePointer(destination);
   output << "[-]";
@@ -40,6 +41,19 @@ int BrainfuckCompiler::copyValue(int source, int destination) {
   movePointer(source);
   output << "+";
   movePointer(helperPointer);
+  output << "]";
+  return destination;
+}
+
+int BrainfuckCompiler::moveValue(int source, int destination) {
+  output << endl << "Move value from " << source << " to " << destination << endl;
+  movePointer(destination);
+  output << "[-]";
+  movePointer(source);
+  output << "[-";
+  movePointer(destination);
+  output << "+";
+  movePointer(source);
   output << "]";
   return destination;
 }
@@ -123,6 +137,22 @@ int BrainfuckCompiler::multiplyValues(int a, int b) {
   result = addValues(b, result);
   movePointer(aCopy);
   output << "]";
+  return result;
+}
+
+int BrainfuckCompiler::divideValues(int a, int b) {
+  int aCopy = duplicateValue(a);
+  int result = getPointerForConstValue(0);
+  performWhile(
+    [&]() -> int {
+      return this->greaterThanOrEqual(aCopy, b);
+    },
+    [&]() -> void {
+      this->movePointer(result);
+      this->output << "+";
+      this->setValue(aCopy, this->subtractValues(aCopy, b));
+    }
+  );
   return result;
 }
 
@@ -226,7 +256,6 @@ int BrainfuckCompiler::lessThan(int a, int b) {
     []() -> void {}
   );
   return result;
-  // TODO while loop
 }
 int BrainfuckCompiler::lessThanOrEqual(int a, int b) {
   return logicalOr(
@@ -260,14 +289,27 @@ void BrainfuckCompiler::performIfElse(int expression, function<void ()> ifFn, fu
 }
 
 void BrainfuckCompiler::performWhile(function<int ()> expressionFn, function<void ()> loopFn) {
+  output << endl << "Starting while" << endl;
   int expression = expressionFn();
   movePointer(expression);
   output << "[";
+  movePointer(expression);
+  output << endl << "Loop FN start" << endl;
   loopFn();
+  output << endl << "Loop FN end" << endl;
+  output << endl << "Expression FN start" << endl;
   int newExpression = expressionFn();
-  copyValue(newExpression, expression);
+  output << endl << "Expression FN end" << endl;
+  moveValue(newExpression, expression);
+  output << endl << "Copied the new expression value" << endl;
   movePointer(expression);
   output << "]";
+  output << endl << "Ending while" << endl;
+}
+
+void BrainfuckCompiler::printAsChar(int a) {
+  movePointer(a);
+  output << ".";
 }
 
 antlrcpp::Any BrainfuckCompiler::visitAdditiveExpression(SimpleCParser::AdditiveExpressionContext *ctx) {
@@ -440,6 +482,9 @@ antlrcpp::Any BrainfuckCompiler::visitMultiplicativeExpression(SimpleCParser::Mu
       if (ctx->children[1]->getText() == "*") {
         return multiplyValues(firstOperandPointer, secondOperandPointer);
       }
+      if (ctx->children[1]->getText() == "/") {
+        return divideValues(firstOperandPointer, secondOperandPointer);
+      }
     }
   }
   throw "Unsupported multiplicative expression";
@@ -448,6 +493,16 @@ antlrcpp::Any BrainfuckCompiler::visitMultiplicativeExpression(SimpleCParser::Mu
 antlrcpp::Any BrainfuckCompiler::visitPostfixExpression(SimpleCParser::PostfixExpressionContext *ctx) {
   if (ctx->primaryExpression()) {
     return visitPrimaryExpression(ctx->primaryExpression());
+  }
+  if (ctx->children[1]->getText() == "(") {
+    if (ctx->postfixExpression()->getText() == "printf") {
+      printAsChar(memory.getVariableCell("a"));
+      return NULL;
+      // vector<antlrcpp::Any> arguments;
+      // if (ctx->argumentExpressionList()) {
+      //   arguments = (vector<antlrcpp::Any>)(ctx->argumentExpressionList()->accept(this));
+      // }
+    }
   }
   throw "Unsupported postfix expression";
 }
