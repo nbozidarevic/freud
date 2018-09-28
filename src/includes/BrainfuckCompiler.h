@@ -31,6 +31,7 @@ private:
   int subtractValues(int a, int b);
   int multiplyValues(int a, int b);
   int divideValues(int a, int b);
+  int modValues(int a, int b);
   int negate(int a);
   int isEqual(int a, int b);
   int logicalAnd(int a, int b);

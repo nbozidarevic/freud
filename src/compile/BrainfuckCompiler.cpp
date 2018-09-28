@@ -141,12 +141,11 @@ int BrainfuckCompiler::subtractValues(int a, int b) {
 
 int BrainfuckCompiler::multiplyValues(int a, int b) {
   int aCopy = duplicateValue(a);
-  int result = memory.getTemporaryCell();
-  movePointer(result);
-  output << "[-]";
+  int result = getPointerForConstValue(0);
   movePointer(aCopy);
   output << "[-";
-  result = addValues(b, result);
+  int newResult = addValues(b, result);
+  moveValue(newResult, result);
   movePointer(aCopy);
   output << "]";
   return result;
@@ -164,6 +163,21 @@ int BrainfuckCompiler::divideValues(int a, int b) {
       this->output << "+";
       this->moveValue(this->subtractValues(aCopy, b), aCopy);
     }
+  );
+  return result;
+}
+
+int BrainfuckCompiler::modValues(int a, int b) {
+  int result = getPointerForConstValue(0);
+  moveValue(
+    subtractValues(
+      a,
+      multiplyValues(
+        divideValues(a, b),
+        b
+      )
+    ),
+    result
   );
   return result;
 }
@@ -492,6 +506,9 @@ antlrcpp::Any BrainfuckCompiler::visitMultiplicativeExpression(SimpleCParser::Mu
       if (ctx->children[1]->getText() == "/") {
         return divideValues(firstOperandPointer, secondOperandPointer);
       }
+      if (ctx->children[1]->getText() == "%") {
+        return modValues(firstOperandPointer, secondOperandPointer);
+      }
     }
   }
   throw "Unsupported multiplicative expression";
@@ -504,6 +521,7 @@ antlrcpp::Any BrainfuckCompiler::visitPostfixExpression(SimpleCParser::PostfixEx
   if (ctx->children[1]->getText() == "(") {
     if (ctx->postfixExpression()->getText() == "printf") {
       printAsChar(memory.getVariableCell("a"));
+      printAsChar(memory.getVariableCell("b"));
       return NULL;
       // vector<antlrcpp::Any> arguments;
       // if (ctx->argumentExpressionList()) {
