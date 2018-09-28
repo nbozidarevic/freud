@@ -43,6 +43,12 @@ private:
 
   void performIfElse(int expression, function<void ()> ifFn, function<void ()> elseFn);
   void performWhile(function<int ()> expressionFn, function<void ()> loopFn);
+  void performFor(
+    function<void ()> initFn,
+    function<int ()> expressionFn,
+    function<void ()> updateFn,
+    function<void ()> loopFn
+  );
 
   void printAsChar(int a);
 

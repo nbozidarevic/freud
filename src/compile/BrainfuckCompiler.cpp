@@ -328,6 +328,22 @@ void BrainfuckCompiler::performWhile(function<int ()> expressionFn, function<voi
   output << "]";
 }
 
+void BrainfuckCompiler::performFor(
+  function<void ()> initFn,
+  function<int ()> expressionFn,
+  function<void ()> updateFn,
+  function<void ()> loopFn
+) {
+  initFn();
+  performWhile(
+    expressionFn,
+    [&]() -> void {
+      loopFn();
+      updateFn();
+    }
+  ); 
+}
+
 void BrainfuckCompiler::printAsChar(int a) {
   movePointer(a);
   output << ".";
@@ -457,6 +473,49 @@ antlrcpp::Any BrainfuckCompiler::visitIterationStatement(SimpleCParser::Iteratio
     );
     return NULL;
   }
+  if (ctx->For()) {
+    SimpleCParser::ForConditionContext *forCondition = dynamic_cast<SimpleCParser::ForConditionContext*>(ctx->forCondition());
+    function<void ()> initFn = [&]() -> void {};
+    function<int ()> expressionFn = [&]() -> int {
+      return 0;
+    };
+    function<void ()> updateFn = [&]() -> void {};
+
+    int firstPos = 0;
+    int secondPos = 1;
+    int thirdPos = 2;
+    if (forCondition->children[firstPos]->getText() != ";") {
+      initFn = [&]() -> void {
+        forCondition->children[firstPos]->accept(this);
+      };
+      secondPos = firstPos + 2;
+      thirdPos = firstPos + 3;
+    }
+
+    if (forCondition->children[secondPos]->getText() != ";") {
+      expressionFn = [&]() -> int {
+        return forCondition->children[secondPos]->accept(this);
+      };
+      thirdPos = secondPos + 2;
+    }
+
+    if (thirdPos < forCondition->children.size()) {
+      updateFn = [&]() -> void {
+        forCondition->children[thirdPos]->accept(this);
+      };
+    }
+
+    performFor(
+      initFn,
+      expressionFn,
+      updateFn,
+      [&]() -> void {
+        ctx->statement()->accept(this);
+      }
+    );
+    return NULL;
+  }
+  output << endl << ctx->getText() << endl;
   throw "Unsupported iteration statement";
 }
 
@@ -521,7 +580,7 @@ antlrcpp::Any BrainfuckCompiler::visitPostfixExpression(SimpleCParser::PostfixEx
   if (ctx->children[1]->getText() == "(") {
     if (ctx->postfixExpression()->getText() == "printf") {
       printAsChar(memory.getVariableCell("a"));
-      printAsChar(memory.getVariableCell("b"));
+      // printAsChar(memory.getVariableCell("b"));
       return NULL;
       // vector<antlrcpp::Any> arguments;
       // if (ctx->argumentExpressionList()) {
