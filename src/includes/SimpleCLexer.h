@@ -12,17 +12,17 @@
 class  SimpleCLexer : public antlr4::Lexer {
 public:
   enum {
-    T__0 = 1, Break = 2, Case = 3, Char = 4, Continue = 5, Default = 6, 
-    Do = 7, Else = 8, For = 9, Goto = 10, If = 11, Int = 12, Long = 13, 
-    Return = 14, Short = 15, Switch = 16, Void = 17, While = 18, LeftParen = 19, 
-    RightParen = 20, LeftBracket = 21, RightBracket = 22, LeftBrace = 23, 
-    RightBrace = 24, Less = 25, LessEqual = 26, Greater = 27, GreaterEqual = 28, 
-    Plus = 29, PlusPlus = 30, Minus = 31, MinusMinus = 32, Star = 33, Div = 34, 
-    Mod = 35, AndAnd = 36, OrOr = 37, Not = 38, Question = 39, Colon = 40, 
-    Semi = 41, Comma = 42, Assign = 43, StarAssign = 44, DivAssign = 45, 
-    ModAssign = 46, PlusAssign = 47, MinusAssign = 48, Equal = 49, NotEqual = 50, 
-    Identifier = 51, Constant = 52, DigitSequence = 53, StringLiteral = 54, 
-    Whitespace = 55, Newline = 56, BlockComment = 57, LineComment = 58
+    T__0 = 1, T__1 = 2, Break = 3, Case = 4, Char = 5, Continue = 6, Default = 7, 
+    Do = 8, Else = 9, For = 10, Goto = 11, If = 12, Int = 13, Long = 14, 
+    Return = 15, Short = 16, Switch = 17, Void = 18, While = 19, LeftParen = 20, 
+    RightParen = 21, LeftBracket = 22, RightBracket = 23, LeftBrace = 24, 
+    RightBrace = 25, Less = 26, LessEqual = 27, Greater = 28, GreaterEqual = 29, 
+    Plus = 30, PlusPlus = 31, Minus = 32, MinusMinus = 33, Star = 34, Div = 35, 
+    Mod = 36, AndAnd = 37, OrOr = 38, Not = 39, Question = 40, Colon = 41, 
+    Semi = 42, Comma = 43, Assign = 44, StarAssign = 45, DivAssign = 46, 
+    ModAssign = 47, PlusAssign = 48, MinusAssign = 49, Equal = 50, NotEqual = 51, 
+    Identifier = 52, Constant = 53, DigitSequence = 54, StringLiteral = 55, 
+    Whitespace = 56, Newline = 57, BlockComment = 58, LineComment = 59
   };
 
   SimpleCLexer(antlr4::CharStream *input);

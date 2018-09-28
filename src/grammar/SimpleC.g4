@@ -52,6 +52,7 @@ unaryExpression
     |   '++' unaryExpression
     |   '--' unaryExpression
     |   '!' unaryExpression
+    |   '&' unaryExpression
     ;
 
 simpleExpression

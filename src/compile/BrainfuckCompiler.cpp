@@ -16,11 +16,11 @@ void BrainfuckCompiler::run() {
   SimpleCParser parser(&tokens);
   SimpleCParser::CompilationUnitContext* tree = parser.compilationUnit();
 
-  output << endl;
+  // output << endl;
   visitCompilationUnit(tree);
   output << endl;
   // output << endl << tree->toStringTree(&parser) << endl;
-  // output << endl << memory.getVariableCell("a") << endl;
+  return;
 }
 
 int BrainfuckCompiler::copyValue(int source, int destination) {
@@ -470,6 +470,7 @@ antlrcpp::Any BrainfuckCompiler::visitArgumentExpressionList(SimpleCParser::Argu
 }
 
 antlrcpp::Any BrainfuckCompiler::visitAssignmentExpression(SimpleCParser::AssignmentExpressionContext *ctx) {
+  // output << endl << "\"" << ctx->getText() << "\"" << endl;
   if (ctx->children.size() == 1) {
     SimpleCParser::LogicalOrExpressionContext *logicalOrExpression = dynamic_cast<SimpleCParser::LogicalOrExpressionContext*>(ctx->children[0]);
     if (logicalOrExpression) {
@@ -483,6 +484,7 @@ antlrcpp::Any BrainfuckCompiler::visitAssignmentExpression(SimpleCParser::Assign
       );
     }    
   }
+  // return NULL;
   throw "Unsupported assignment expression";
 }
 
@@ -842,6 +844,9 @@ antlrcpp::Any BrainfuckCompiler::visitUnaryExpression(SimpleCParser::UnaryExpres
   }
   if (ctx->children[0]->getText() == "!") {
     return negate(ctx->unaryExpression()->accept(this));
+  }
+  if (ctx->children[0]->getText() == "&") {
+    return ctx->unaryExpression()->accept(this);
   }
   throw "Unsupported unary expression";
 }
