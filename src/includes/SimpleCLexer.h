@@ -22,7 +22,8 @@ public:
     Semi = 42, Comma = 43, Assign = 44, StarAssign = 45, DivAssign = 46, 
     ModAssign = 47, PlusAssign = 48, MinusAssign = 49, Equal = 50, NotEqual = 51, 
     Identifier = 52, Constant = 53, DigitSequence = 54, StringLiteral = 55, 
-    Whitespace = 56, Newline = 57, BlockComment = 58, LineComment = 59
+    Whitespace = 56, Newline = 57, BlockComment = 58, LineComment = 59, 
+    Directive = 60
   };
 
   SimpleCLexer(antlr4::CharStream *input);

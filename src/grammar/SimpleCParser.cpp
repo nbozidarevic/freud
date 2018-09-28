@@ -2204,7 +2204,8 @@ SimpleCParser::NestedParenthesesBlockContext* SimpleCParser::nestedParenthesesBl
       | (1ULL << SimpleCParser::Whitespace)
       | (1ULL << SimpleCParser::Newline)
       | (1ULL << SimpleCParser::BlockComment)
-      | (1ULL << SimpleCParser::LineComment))) != 0)) {
+      | (1ULL << SimpleCParser::LineComment)
+      | (1ULL << SimpleCParser::Directive))) != 0)) {
       setState(320);
       _errHandler->sync(this);
       switch (_input->LA(1)) {
@@ -2264,7 +2265,8 @@ SimpleCParser::NestedParenthesesBlockContext* SimpleCParser::nestedParenthesesBl
         case SimpleCParser::Whitespace:
         case SimpleCParser::Newline:
         case SimpleCParser::BlockComment:
-        case SimpleCParser::LineComment: {
+        case SimpleCParser::LineComment:
+        case SimpleCParser::Directive: {
           setState(315);
           _la = _input->LA(1);
           if (_la == 0 || _la == Token::EOF || (_la == SimpleCParser::LeftParen
@@ -5241,7 +5243,7 @@ std::vector<std::string> SimpleCParser::_symbolicNames = {
   "Not", "Question", "Colon", "Semi", "Comma", "Assign", "StarAssign", "DivAssign", 
   "ModAssign", "PlusAssign", "MinusAssign", "Equal", "NotEqual", "Identifier", 
   "Constant", "DigitSequence", "StringLiteral", "Whitespace", "Newline", 
-  "BlockComment", "LineComment"
+  "BlockComment", "LineComment", "Directive"
 };
 
 dfa::Vocabulary SimpleCParser::_vocabulary(_literalNames, _symbolicNames);
@@ -5264,7 +5266,7 @@ SimpleCParser::Initializer::Initializer() {
 
   _serializedATN = {
     0x3, 0x608b, 0xa72a, 0x8133, 0xb9ed, 0x417c, 0x3be7, 0x7786, 0x5964, 
-    0x3, 0x3d, 0x263, 0x4, 0x2, 0x9, 0x2, 0x4, 0x3, 0x9, 0x3, 0x4, 0x4, 
+    0x3, 0x3e, 0x263, 0x4, 0x2, 0x9, 0x2, 0x4, 0x3, 0x9, 0x3, 0x4, 0x4, 
     0x9, 0x4, 0x4, 0x5, 0x9, 0x5, 0x4, 0x6, 0x9, 0x6, 0x4, 0x7, 0x9, 0x7, 
     0x4, 0x8, 0x9, 0x8, 0x4, 0x9, 0x9, 0x9, 0x4, 0xa, 0x9, 0xa, 0x4, 0xb, 
     0x9, 0xb, 0x4, 0xc, 0x9, 0xc, 0x4, 0xd, 0x9, 0xd, 0x4, 0xe, 0x9, 0xe, 

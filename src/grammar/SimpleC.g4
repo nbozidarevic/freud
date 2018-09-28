@@ -449,3 +449,8 @@ LineComment
     :   '//' ~[\r\n]*
         -> skip
     ;
+
+Directive
+    :   '#'  ~[\r\n]*
+        -> skip
+    ;
