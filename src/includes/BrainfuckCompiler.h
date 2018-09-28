@@ -52,7 +52,9 @@ private:
 
   void printAsChar(int a);
   void printAsDigit(int a);
+  void readAsChar(int a);
   void printAsNumber(int a);
+  void readAsNumber(int a);
   void printChar(unsigned char c);
 
   antlrcpp::Any visitAdditiveExpression(SimpleCParser::AdditiveExpressionContext *ctx);

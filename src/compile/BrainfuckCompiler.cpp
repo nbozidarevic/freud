@@ -381,6 +381,56 @@ void BrainfuckCompiler::printAsNumber(int a) {
   );
 }
 
+void BrainfuckCompiler::readAsChar(int a) {
+  movePointer(a);
+  output << ",";
+}
+
+void BrainfuckCompiler::readAsNumber(int a) {
+  int reader = getPointerForConstValue(0);
+  int result = getPointerForConstValue(0);
+  int zero = getPointerForConstValue('0');
+  int nine = getPointerForConstValue('9');
+  int ten = getPointerForConstValue(10);
+  movePointer(reader);
+  output << ",";
+  performWhile(
+    [&]() -> int {
+      return this->logicalOr(
+        this->lessThan(reader, zero),
+        this->greaterThan(reader, nine)
+      );
+    },
+    [&]() -> void {
+      this->movePointer(reader);
+      output << ",";
+    }
+  );
+  performWhile(
+    [&]() -> int {
+      return this->logicalAnd(
+        this->greaterThanOrEqual(reader, zero),
+        this->lessThanOrEqual(reader, nine)
+      );
+    },
+    [&]() -> void {
+      this->moveValue(
+        this->addValues(
+          this->subtractValues(reader, zero),
+          this->multiplyValues(
+            result,
+            ten
+          )
+        ),
+        result
+      );
+      this->movePointer(reader);
+      output << ",";
+    }
+  );
+  moveValue(result, a);
+}
+
 void BrainfuckCompiler::printChar(unsigned char c) {
   int a = getPointerForConstValue(c);
   movePointer(a);
@@ -626,7 +676,10 @@ antlrcpp::Any BrainfuckCompiler::visitPostfixExpression(SimpleCParser::PostfixEx
     return visitPrimaryExpression(ctx->primaryExpression());
   }
   if (ctx->children[1]->getText() == "(") {
-    if (ctx->postfixExpression()->getText() == "printf") {
+    if (
+      ctx->postfixExpression()->getText() == "printf" ||
+      ctx->postfixExpression()->getText() == "scanf"
+    ) {
       vector<antlrcpp::Any> allParams;
       if (ctx->argumentExpressionList()) {
         vector<antlrcpp::Any> params = ctx->argumentExpressionList()->accept(this);
@@ -637,36 +690,57 @@ antlrcpp::Any BrainfuckCompiler::visitPostfixExpression(SimpleCParser::PostfixEx
         int nextVariable = 1;
         int pointer;
         for (int i = 1; i < formatString.length() - 1; ++i) {
-          switch (formatString[i]) {
-            case '\\':
-              switch (formatString[i+1]) {
-                case 'n':
-                  printChar('\n');
-                  break;
-                case 't':
-                  printChar('\t');
-                  break;
-                default:
-                  throw "Incorrect backslash in printf";
-              }
-              ++i;
-              break;
-            case '%':
-              pointer = allParams[nextVariable++];
-              switch (formatString[i+1]) {
-                case 'c':
-                  printAsChar(pointer);
-                  break;
-                case 'd':
-                  printAsNumber(pointer);
-                  break;
-                default:
-                  throw "Unexpected printf format";
-              }
-              ++i;
-              break;
-            default:
-              printChar(formatString[i]);
+          if (ctx->postfixExpression()->getText() == "printf") {
+            switch (formatString[i]) {
+              case '\\':
+                switch (formatString[i+1]) {
+                  case 'n':
+                    printChar('\n');
+                    break;
+                  case 't':
+                    printChar('\t');
+                    break;
+                  default:
+                    throw "Incorrect backslash in printf";
+                }
+                ++i;
+                break;
+              case '%':
+                pointer = allParams[nextVariable++];
+                switch (formatString[i+1]) {
+                  case 'c':
+                    printAsChar(pointer);
+                    break;
+                  case 'd':
+                    printAsNumber(pointer);
+                    break;
+                  default:
+                    throw "Unexpected printf format";
+                }
+                ++i;
+                break;
+              default:
+                printChar(formatString[i]);
+            }
+          } else {
+            switch (formatString[i]) {
+              case '%':
+                pointer = allParams[nextVariable++];
+                switch (formatString[i+1]) {
+                  case 'c':
+                    readAsChar(pointer);
+                    break;
+                  case 'd':
+                    readAsNumber(pointer);
+                    break;
+                  default:
+                    throw "Unexpected scanf format";
+                }
+                ++i;
+                break;
+              default:
+                throw "Unexpected scanf format";
+            }
           }
         }
       }
