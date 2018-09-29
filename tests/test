@@ -8,11 +8,39 @@ tests_compile_path = "./compile"
 tests_format_path = "./format"
 tests_run_path = "./run"
 
+for file in os.listdir(tests_compile_path):
+  if file.endswith(".c"):
+    filename = os.path.splitext(file)[0]
+    expected = subprocess.Popen(
+      "g++ -w " + tests_compile_path + "/" + filename + ".c -o " + tests_compile_path + "/tmp.o; " +
+        tests_compile_path + "/tmp.o < " + tests_compile_path + "/" + filename + ".in",
+      shell=True,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.STDOUT
+    ).stdout.read().decode('utf-8')
+    actual = subprocess.Popen(
+      "../bin/freud compile -c " + tests_compile_path + "/" + filename + ".c -o " + tests_compile_path + "/tmp.bf; " +
+        "../bin/freud run -c " + tests_compile_path + "/tmp.bf -i " + tests_compile_path + "/" + filename + ".in",
+      shell=True,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.STDOUT
+    ).stdout.read().decode('utf-8')
+    if actual != expected:
+      print("Failed RUN test " + filename + ":")
+      print("".join(difflib.unified_diff(expected.splitlines(1), actual.splitlines(1))))
+      print()
+    else:
+      print("Passed RUN test " + filename)
+    subprocess.Popen(
+      "rm " + tests_compile_path + "/tmp.bf; rm " + tests_compile_path + "/tmp.o",
+      shell=True,
+    )
+
 for file in os.listdir(tests_format_path):
   if file.endswith(".in"):
     filename = os.path.splitext(file)[0]
     actual = subprocess.Popen(
-      "../bin/freud format < " + tests_format_path + "/" + filename + ".in",
+      "../bin/freud format -c " + tests_format_path + "/" + filename + ".in",
       shell=True,
       stdout=subprocess.PIPE,
       stderr=subprocess.STDOUT
@@ -24,3 +52,20 @@ for file in os.listdir(tests_format_path):
       print()
     else:
       print("Passed FORMAT test " + filename)
+
+for file in os.listdir(tests_run_path):
+  if file.endswith(".bf"):
+    filename = os.path.splitext(file)[0]
+    actual = subprocess.Popen(
+      "../bin/freud run -c " + tests_run_path + "/" + filename + ".bf -i " + tests_run_path + "/" + filename + ".in",
+      shell=True,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.STDOUT
+    ).stdout.read().decode('utf-8')
+    expected = open(tests_run_path + "/" + filename + ".out", "r").read()
+    if actual != expected:
+      print("Failed RUN test " + filename + ":")
+      print("".join(difflib.unified_diff(expected.splitlines(1), actual.splitlines(1))))
+      print()
+    else:
+      print("Passed RUN test " + filename)

@@ -34,13 +34,13 @@ void print_usage() {
 
   cout
     << "\t\033[1mcompile\033[0m "
-    << "[-i input-file] "
+    << "[-c code-file] "
     << "[-o output-file]"
     << endl << endl;
   cout
     << "\t\tCompiles the specified C program to Brainfuck." << endl << endl;
   cout
-    << "\t\tIf no input file is specified, the standard" << endl
+    << "\t\tIf no code file is specified, the standard" << endl
     << "\t\tinput is used." << endl << endl;
   cout
     << "\t\tIf no output file is specified, the standard" << endl
@@ -48,7 +48,7 @@ void print_usage() {
 
   cout
     << "\t\033[1mformat\033[0m "
-    << "[-i input-file] "
+    << "[-c code-file] "
     << "[-o output-file] "
     << "[-m]"
     << endl << endl;
@@ -56,24 +56,29 @@ void print_usage() {
     << "\t\tFormats the specified Brainfuck program by removing all" << endl
     << "\t\tinvalid characters and adding indentation." << endl << endl;
   cout
+    << "\t\tIf no code file is specified, the standard" << endl
+    << "\t\tinput is used." << endl << endl;
+  cout
     << "\t\tIf no output file is specified, the standard" << endl
     << "\t\toutput is used." << endl << endl;
-  cout
-    << "\t\tIf no input file is specified, the standard" << endl
-    << "\t\tinput is used." << endl << endl;
   cout
     << "\t\tIf the -m flag is specified, all whitespace is removed."
     << endl << endl;
 
   cout
     << "\t\033[1mrun\033[0m "
-    << "[-i input-file]"
+    << "-c code-file "
+    << "[-i input-file] "
+    << "[-o output-file]"
     << endl << endl;
   cout
     << "\t\tExecutes the specified Brainfuck program." << endl << endl;
   cout
     << "\t\tIf no input file is specified, the standard" << endl
     << "\t\tinput is used." << endl << endl;
+  cout
+    << "\t\tIf no output file is specified, the standard" << endl
+    << "\t\toutput is used." << endl << endl;
 }
 
 unordered_map<string, string> parse_params(
@@ -86,26 +91,30 @@ unordered_map<string, string> parse_params(
   int i = 0;
   while (i < argc) {
     string param = string(argv[i]);
-    string value;
 
-    if ((command == "compile" || command == "format") && param == "-o") {
+    if (param == "-c") {
       ++i;
       if (i < argc) {
-        params["output"] = string(argv[i]);
+        params["code"] = string(argv[i]);
       } else {
-        throw "Parameter -o is missing a value.";
+        throw "Parameter -c is missing a value.";
       }
-    } else if (command == "format" && param == "-m") {
-      params["minify"] = "minify";
-    } else if (param == "-i") {
+    } else if (param == "-i" && command == "run") {
       ++i;
       if (i < argc) {
         params["input"] = string(argv[i]);
       } else {
         throw "Parameter -i is missing a value.";
       }
-    } else {
-      throw "Unknown parametre \"" + param + "\".";
+    } else if (param == "-o") {
+      ++i;
+      if (i < argc) {
+        params["output"] = string(argv[i]);
+      } else {
+        throw "Parameter -o is missing a value.";
+      }
+    } else if (param == "-m") {
+      params["minify"] = "minify";
     }
 
     ++i;
@@ -115,10 +124,10 @@ unordered_map<string, string> parse_params(
 }
 
 int format(unordered_map<string, string>& params) {
-  unordered_map<string, string>::iterator input = params.find("input");
+  unordered_map<string, string>::iterator code = params.find("code");
   istream *codeStream =
-    input != params.end()
-      ? new ifstream(input->second, ifstream::in)
+    code != params.end()
+      ? new ifstream(code->second, ifstream::in)
       : &cin;
 
   unordered_map<string, string>::iterator output = params.find("output");
@@ -134,7 +143,7 @@ int format(unordered_map<string, string>& params) {
   );
   bff.run();
 
-  if (input != params.end()) {
+  if (code != params.end()) {
     delete codeStream;
   }
   if (output != params.end()) {
@@ -145,10 +154,10 @@ int format(unordered_map<string, string>& params) {
 }
 
 int compile(unordered_map<string, string>& params) {
-  unordered_map<string, string>::iterator input = params.find("input");
+  unordered_map<string, string>::iterator code = params.find("code");
   istream *codeStream =
-    input != params.end()
-      ? new ifstream(input->second, ifstream::in)
+    code != params.end()
+      ? new ifstream(code->second, ifstream::in)
       : &cin;
 
   unordered_map<string, string>::iterator output = params.find("output");
@@ -163,7 +172,7 @@ int compile(unordered_map<string, string>& params) {
   );
   bfc.run();
 
-  if (input != params.end()) {
+  if (code != params.end()) {
     delete codeStream;
   }
   if (output != params.end()) {
@@ -174,17 +183,34 @@ int compile(unordered_map<string, string>& params) {
 }
 
 int run(unordered_map<string, string>& params) {
+  unordered_map<string, string>::iterator code = params.find("code");
+  if (code == params.end()) {
+    throw "Parameter -c is required";
+  }
+  istream *codeStream = new ifstream(code->second, ifstream::in);
+
   unordered_map<string, string>::iterator input = params.find("input");
-  istream *codeStream =
+  istream *inputStream =
     input != params.end()
       ? new ifstream(input->second, ifstream::in)
       : &cin;
 
-  BrainfuckRunner bfr(*codeStream, cin, cout);
+  unordered_map<string, string>::iterator output = params.find("output");
+  ostream *outputStream =
+    output != params.end()
+      ? new ofstream(output->second, ifstream::out)
+      : &cout;
+
+
+  BrainfuckRunner bfr(*codeStream, *inputStream, *outputStream);
   bfr.run();
 
+  delete codeStream;
   if (input != params.end()) {
-    delete codeStream;
+    delete inputStream;
+  }
+  if (output != params.end()) {
+    delete outputStream;
   }
 
   return 0;

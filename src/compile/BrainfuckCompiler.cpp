@@ -74,7 +74,7 @@ int BrainfuckCompiler::setValue(int destination, int value) {
   movePointer(destination);
   output << "[-]";
   for (int i = 0; i < value; ++i) {
-    cout << "+";
+    output << "+";
   }
   return destination;
 }
@@ -88,7 +88,7 @@ void BrainfuckCompiler::movePointer(int destination) {
     c = '<';
   }
   for (int i = 0; i < abs(pointer - destination); ++i) {
-    cout << c;
+    output << c;
   }
   pointer = destination;
 }
