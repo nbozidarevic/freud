@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+
+import difflib
+import os
+import subprocess
+
+tests_compile_path = "./compile"
+tests_format_path = "./format"
+tests_run_path = "./run"
+
+for file in os.listdir(tests_format_path):
+  if file.endswith(".in"):
+    filename = os.path.splitext(file)[0]
+    actual = subprocess.Popen(
+      "../bin/freud format < " + tests_format_path + "/" + filename + ".in",
+      shell=True,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.STDOUT
+    ).stdout.read().decode('utf-8')
+    expected = open(tests_format_path + "/" + filename + ".out", "r").read()
+    if actual != expected:
+      print("Failed FORMAT test " + filename + ":")
+      print("".join(difflib.unified_diff(expected.splitlines(1), actual.splitlines(1))))
+      print()
+    else:
+      print("Passed FORMAT test " + filename)
