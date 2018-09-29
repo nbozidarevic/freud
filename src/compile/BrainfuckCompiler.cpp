@@ -357,34 +357,42 @@ void BrainfuckCompiler::printAsNumber(int a) {
   int nine = getPointerForConstValue(9);
   int ten = getPointerForConstValue(10);
   int newlyBuilt = getPointerForConstValue(0);
-  performWhile(
-    [&]() -> int {
-      return this->lessThan(newlyBuilt, a);
-    },
+  performIfElse(
+    a,
     [&]() -> void {
-      this->setValue(helperPointer, 1);
-      this->copyValue(aCopy, digit);
       performWhile(
         [&]() -> int {
-          return greaterThan(digit, nine);
+          return this->lessThan(newlyBuilt, a);
         },
         [&]() -> void {
-          this->moveValue(this->divideValues(digit, ten), digit);
-          this->moveValue(this->multiplyValues(helperPointer, ten), helperPointer);
+          this->setValue(helperPointer, 1);
+          this->copyValue(aCopy, digit);
+          performWhile(
+            [&]() -> int {
+              return greaterThan(digit, nine);
+            },
+            [&]() -> void {
+              this->moveValue(this->divideValues(digit, ten), digit);
+              this->moveValue(this->multiplyValues(helperPointer, ten), helperPointer);
+            }
+          );
+          this->moveValue(
+            this->addValues(
+              this->multiplyValues(newlyBuilt, ten),
+              digit
+            ),
+            newlyBuilt
+          );
+          this->printAsChar(this->addValues(digit, zeroChar));
+          this->moveValue(
+            this->subtractValues(aCopy, this->multiplyValues(digit, helperPointer)),
+            aCopy
+          );
         }
       );
-      this->moveValue(
-        this->addValues(
-          this->multiplyValues(newlyBuilt, ten),
-          digit
-        ),
-        newlyBuilt
-      );
-      this->printAsChar(this->addValues(digit, zeroChar));
-      this->moveValue(
-        this->subtractValues(aCopy, this->multiplyValues(digit, helperPointer)),
-        aCopy
-      );
+    },
+    [&]() -> void {
+      this->printAsChar(zeroChar);
     }
   );
 }
@@ -747,6 +755,8 @@ antlrcpp::Any BrainfuckCompiler::visitPostfixExpression(SimpleCParser::PostfixEx
                     throw "Unexpected scanf format";
                 }
                 ++i;
+                break;
+              case ' ':
                 break;
               default:
                 throw "Unexpected scanf format";

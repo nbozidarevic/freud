@@ -26,11 +26,11 @@ for file in os.listdir(tests_compile_path):
       stderr=subprocess.STDOUT
     ).stdout.read().decode('utf-8')
     if actual != expected:
-      print("Failed RUN test " + filename + ":")
+      print("Failed COMPILE test " + filename + ":")
       print("".join(difflib.unified_diff(expected.splitlines(1), actual.splitlines(1))))
       print()
     else:
-      print("Passed RUN test " + filename)
+      print("Passed COMPILE test " + filename)
     subprocess.Popen(
       "rm " + tests_compile_path + "/tmp.bf; rm " + tests_compile_path + "/tmp.o",
       shell=True,
