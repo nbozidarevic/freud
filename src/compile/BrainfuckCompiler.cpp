@@ -356,9 +356,10 @@ void BrainfuckCompiler::printAsNumber(int a) {
   int zeroChar = getPointerForConstValue('0');
   int nine = getPointerForConstValue(9);
   int ten = getPointerForConstValue(10);
+  int newlyBuilt = getPointerForConstValue(0);
   performWhile(
     [&]() -> int {
-      return aCopy;
+      return this->lessThan(newlyBuilt, a);
     },
     [&]() -> void {
       this->setValue(helperPointer, 1);
@@ -371,6 +372,13 @@ void BrainfuckCompiler::printAsNumber(int a) {
           this->moveValue(this->divideValues(digit, ten), digit);
           this->moveValue(this->multiplyValues(helperPointer, ten), helperPointer);
         }
+      );
+      this->moveValue(
+        this->addValues(
+          this->multiplyValues(newlyBuilt, ten),
+          digit
+        ),
+        newlyBuilt
       );
       this->printAsChar(this->addValues(digit, zeroChar));
       this->moveValue(
