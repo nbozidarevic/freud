@@ -3,6 +3,9 @@
 import difflib
 import os
 import subprocess
+import sys
+
+failed = False
 
 tests_compile_path = "./compile"
 tests_format_path = "./format"
@@ -26,6 +29,7 @@ for file in os.listdir(tests_compile_path):
       stderr=subprocess.STDOUT
     ).stdout.read().decode('utf-8')
     if actual != expected:
+      failed = True
       print("Failed COMPILE test " + filename + ":")
       print("".join(difflib.unified_diff(expected.splitlines(1), actual.splitlines(1))))
       print()
@@ -47,6 +51,7 @@ for file in os.listdir(tests_format_path):
     ).stdout.read().decode('utf-8')
     expected = open(tests_format_path + "/" + filename + ".out", "r").read()
     if actual != expected:
+      failed = True
       print("Failed FORMAT test " + filename + ":")
       print("".join(difflib.unified_diff(expected.splitlines(1), actual.splitlines(1))))
       print()
@@ -64,8 +69,11 @@ for file in os.listdir(tests_run_path):
     ).stdout.read().decode('utf-8')
     expected = open(tests_run_path + "/" + filename + ".out", "r").read()
     if actual != expected:
+      failed = True
       print("Failed RUN test " + filename + ":")
       print("".join(difflib.unified_diff(expected.splitlines(1), actual.splitlines(1))))
       print()
     else:
       print("Passed RUN test " + filename)
+
+sys.exit(1 if failed else 0)
