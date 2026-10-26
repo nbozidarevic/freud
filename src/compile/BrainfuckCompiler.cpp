@@ -579,6 +579,7 @@ antlrcpp::Any BrainfuckCompiler::visitInitDeclarator(SimpleCParser::InitDeclarat
 
 antlrcpp::Any BrainfuckCompiler::visitIterationStatement(SimpleCParser::IterationStatementContext *ctx) {
   if (ctx->While()) {
+    breakStack.push(-1);
     performWhile(
       [&]() -> int {
         return ctx->expression()->accept(this);
@@ -587,9 +588,11 @@ antlrcpp::Any BrainfuckCompiler::visitIterationStatement(SimpleCParser::Iteratio
         ctx->statement()->accept(this);
       }
     );
+    breakStack.pop();
     return NULL;
   }
   if (ctx->For()) {
+    breakStack.push(-1);
     SimpleCParser::ForConditionContext *forCondition = dynamic_cast<SimpleCParser::ForConditionContext*>(ctx->forCondition());
     function<void ()> initFn = [&]() -> void {};
     function<int ()> expressionFn = [&]() -> int {
@@ -629,10 +632,33 @@ antlrcpp::Any BrainfuckCompiler::visitIterationStatement(SimpleCParser::Iteratio
         ctx->statement()->accept(this);
       }
     );
+    breakStack.pop();
     return NULL;
   }
   output << endl << ctx->getText() << endl;
   throw "Unsupported iteration statement";
+}
+
+antlrcpp::Any BrainfuckCompiler::visitJumpStatement(SimpleCParser::JumpStatementContext *ctx) {
+  string keyword = ctx->children[0]->getText();
+  if (keyword == "break") {
+    if (breakStack.empty()) {
+      throw "Unsupported break outside of any loop or switch";
+    }
+    int broken = breakStack.top();
+    if (broken < 0) {
+      throw "Unsupported break inside loops (only switch is supported)";
+    }
+    setValue(broken, 1);
+    return NULL;
+  }
+  if (keyword == "continue") {
+    if (breakStack.empty()) {
+      throw "Unsupported continue outside of any loop";
+    }
+    throw "Unsupported continue inside loops";
+  }
+  return NULL;
 }
 
 antlrcpp::Any BrainfuckCompiler::visitLogicalAndExpression(SimpleCParser::LogicalAndExpressionContext *ctx) {
@@ -834,6 +860,74 @@ antlrcpp::Any BrainfuckCompiler::visitSimpleExpression(SimpleCParser::SimpleExpr
   throw "Unsupported simple expression";
 }
 
+void BrainfuckCompiler::collectSwitchCases(ParserRuleContext *ctx, vector<SwitchCase> &cases) {
+  SimpleCParser::StatementContext *stmt = dynamic_cast<SimpleCParser::StatementContext*>(ctx);
+  if (stmt) {
+    if (stmt->labeledStatement()) {
+      collectSwitchCases(stmt->labeledStatement(), cases);
+      return;
+    }
+    if (stmt->compoundStatement()) {
+      collectSwitchCases(stmt->compoundStatement(), cases);
+      return;
+    }
+    if (cases.empty()) {
+      throw "Unsupported statements before the first case label";
+    }
+    cases.back().body.push_back(stmt);
+    return;
+  }
+  SimpleCParser::CompoundStatementContext *compound = dynamic_cast<SimpleCParser::CompoundStatementContext*>(ctx);
+  if (compound) {
+    if (compound->blockItemList()) {
+      collectSwitchCases(compound->blockItemList(), cases);
+    }
+    return;
+  }
+  SimpleCParser::BlockItemListContext *list = dynamic_cast<SimpleCParser::BlockItemListContext*>(ctx);
+  if (list) {
+    if (list->blockItemList()) {
+      collectSwitchCases(list->blockItemList(), cases);
+    }
+    if (list->blockItem()) {
+      collectSwitchCases(list->blockItem(), cases);
+    }
+    return;
+  }
+  SimpleCParser::BlockItemContext *item = dynamic_cast<SimpleCParser::BlockItemContext*>(ctx);
+  if (item) {
+    if (item->statement()) {
+      collectSwitchCases(item->statement(), cases);
+    } else if (item->declaration()) {
+      if (cases.empty()) {
+        throw "Unsupported statements before the first case label";
+      }
+      cases.back().body.push_back(item->declaration());
+    }
+    return;
+  }
+  SimpleCParser::LabeledStatementContext *labeled = dynamic_cast<SimpleCParser::LabeledStatementContext*>(ctx);
+  if (labeled) {
+    if (labeled->children[0]->getText() == "case") {
+      SwitchCase c;
+      c.isDefault = false;
+      c.labelCell = labeled->constantExpression()->accept(this);
+      cases.push_back(c);
+    } else {
+      SwitchCase c;
+      c.isDefault = true;
+      c.labelCell = -1;
+      cases.push_back(c);
+    }
+    collectSwitchCases(labeled->statement(), cases);
+    return;
+  }
+  if (cases.empty()) {
+    throw "Unsupported statements before the first case label";
+  }
+  cases.back().body.push_back(ctx);
+}
+
 antlrcpp::Any BrainfuckCompiler::visitSelectionStatement(SimpleCParser::SelectionStatementContext *ctx) {
   if (ctx->children[0]->getText() == "if") {
     SimpleCParser::StatementContext *ifStatement = dynamic_cast<SimpleCParser::StatementContext*>(ctx->children[4]);
@@ -853,6 +947,46 @@ antlrcpp::Any BrainfuckCompiler::visitSelectionStatement(SimpleCParser::Selectio
         } 
       }
     );
+    return NULL;
+  }
+  if (ctx->children[0]->getText() == "switch") {
+    int exprCell = ctx->expression()->accept(this);
+    vector<SwitchCase> cases;
+    SimpleCParser::StatementContext *body = dynamic_cast<SimpleCParser::StatementContext*>(ctx->children[4]);
+    collectSwitchCases(body, cases);
+    int anyMatch = getPointerForConstValue(0);
+    vector<int> matched;
+    for (size_t i = 0; i < cases.size(); ++i) {
+      if (cases[i].isDefault) {
+        matched.push_back(-1);
+        continue;
+      }
+      int m = isEqual(exprCell, cases[i].labelCell);
+      matched.push_back(m);
+      moveValue(logicalOr(anyMatch, m), anyMatch);
+    }
+    int fall = getPointerForConstValue(0);
+    int broken = getPointerForConstValue(0);
+    breakStack.push(broken);
+    for (size_t i = 0; i < cases.size(); ++i) {
+      int runCond;
+      if (cases[i].isDefault) {
+        runCond = logicalAnd(logicalOr(fall, negate(anyMatch)), negate(broken));
+      } else {
+        runCond = logicalAnd(logicalOr(matched[i], fall), negate(broken));
+      }
+      performIfElse(
+        runCond,
+        [&]() -> void {
+          this->setValue(fall, 1);
+          for (size_t j = 0; j < cases[i].body.size(); ++j) {
+            cases[i].body[j]->accept(this);
+          }
+        },
+        []() -> void {}
+      );
+    }
+    breakStack.pop();
     return NULL;
   }
   throw "Unsupported selection statement";

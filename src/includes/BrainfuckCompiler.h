@@ -2,6 +2,8 @@
 #define __BRAINFUCK_COMPILER_H_INCLUDED__
 
 #include <iostream>
+#include <stack>
+#include <vector>
 #include "antlr4-runtime.h"
 #include "BrainfuckMemory.h"
 #include "SimpleCBaseVisitor.h"
@@ -19,6 +21,7 @@ private:
   ostream& output;
   BrainfuckMemory memory;
   int pointer;
+  stack<int> breakStack;
 
   int copyValue(int source, int destination);
   int moveValue(int source, int destination);
@@ -76,6 +79,13 @@ private:
   antlrcpp::Any visitSimpleExpression(SimpleCParser::SimpleExpressionContext *ctx);
   antlrcpp::Any visitSelectionStatement(SimpleCParser::SelectionStatementContext *ctx);
   antlrcpp::Any visitUnaryExpression(SimpleCParser::UnaryExpressionContext *ctx);
+  antlrcpp::Any visitJumpStatement(SimpleCParser::JumpStatementContext *ctx);
+  struct SwitchCase {
+    bool isDefault;
+    int labelCell;
+    vector<antlr4::ParserRuleContext*> body;
+  };
+  void collectSwitchCases(antlr4::ParserRuleContext *ctx, vector<SwitchCase> &cases);
 };
 
 #endif
