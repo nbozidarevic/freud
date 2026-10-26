@@ -1,0 +1,38 @@
+name: Spike hand-parser check
+
+on:
+  push:
+    branches: ['spike/**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  spike-handparse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build spike parser (dependency-free C++11)
+        run: g++ -Wall -std=c++11 -o /tmp/spike-parse spike/handparse/parser.cpp
+
+      - name: Parse all compile fixtures
+        run: |
+          out=$(/tmp/spike-parse tests/compile/*.c)
+          echo "$out"
+          ok=$(printf '%s\n' "$out" | grep -c '^OK ')
+          total=$(ls tests/compile/*.c | wc -l)
+          test "$ok" -eq "$total"
+
+      - name: Reject negative fixtures
+        run: |
+          fail=0
+          for f in spike/handparse/negative/*.c; do
+            if /tmp/spike-parse "$f" >/dev/null 2>&1; then
+              echo "UNEXPECTEDLY ACCEPTED: $f"
+              fail=1
+            else
+              echo "rejected as expected: $f"
+            fi
+          done
+          exit $fail
