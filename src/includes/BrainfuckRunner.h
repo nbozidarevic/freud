@@ -18,7 +18,7 @@ private:
   BrainfuckReader bfr;
   istream& input;
   ostream& output;
-  char* memory;
+  unsigned char* memory;
   int pointer;
   vector<BrainfuckCommand> commandBuffer;
   int commandBufferStartPosition;

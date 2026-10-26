@@ -5,7 +5,7 @@ BrainfuckRunner::BrainfuckRunner(
   istream& input,
   ostream& output
 ):bfr(BrainfuckReader(code)), input(input), output(output) {
-  memory = new char[65536];
+  memory = new unsigned char[65536]();
   pointer = 0;
   currentPosition = 0;
   commandBufferStartPosition = 0;
@@ -33,12 +33,16 @@ void BrainfuckRunner::run() {
       case VALUE_DECREMENT:
         --memory[pointer];
         break;
-      case VALUE_READ:
-        input.get(memory[pointer]);
+      case VALUE_READ: {
+        char c;
+        if (input.get(c)) {
+          memory[pointer] = static_cast<unsigned char>(c);
+        }
         break;
+      }
       case VALUE_WRITE:
         // output << pointer << " " << (int)(memory[pointer]) << endl;
-        output.put(memory[pointer]);
+        output.put(static_cast<char>(memory[pointer]));
         break;
       case LOOP_BEGIN:
         if (memory[pointer] == 0) {
@@ -64,7 +68,7 @@ void BrainfuckRunner::run() {
         break;
       case LOOP_END:
         --currentDepth;
-        if (memory[pointer] > 0) {
+        if (memory[pointer] != 0) {
           currentPosition = loopBeginnings.top();
         } else if (currentDepth == 0) {
           usingBuffer = false;
