@@ -5,7 +5,8 @@ BrainfuckRunner::BrainfuckRunner(
   istream& input,
   ostream& output
 ):bfr(BrainfuckReader(code)), input(input), output(output) {
-  memory = new unsigned char[65536]();
+  tape = vector<unsigned char>(1024, 0);
+  origin = 512;
   pointer = 0;
   currentPosition = 0;
   commandBufferStartPosition = 0;
@@ -13,9 +14,7 @@ BrainfuckRunner::BrainfuckRunner(
   usingBuffer = false;
 }
 
-BrainfuckRunner::~BrainfuckRunner() {
-  delete []memory;
-}
+BrainfuckRunner::~BrainfuckRunner() {}
 
 void BrainfuckRunner::run() {
   BrainfuckCommand command = NONE;
@@ -28,24 +27,24 @@ void BrainfuckRunner::run() {
         ++pointer;
         break;
       case VALUE_INCREMENT:
-        ++memory[pointer];
+        ++cell();
         break;
       case VALUE_DECREMENT:
-        --memory[pointer];
+        --cell();
         break;
       case VALUE_READ: {
         char c;
         if (input.get(c)) {
-          memory[pointer] = static_cast<unsigned char>(c);
+          cell() = static_cast<unsigned char>(c);
         }
         break;
       }
       case VALUE_WRITE:
         // output << pointer << " " << (int)(memory[pointer]) << endl;
-        output.put(static_cast<char>(memory[pointer]));
+        output.put(static_cast<char>(cell()));
         break;
       case LOOP_BEGIN:
-        if (memory[pointer] == 0) {
+        if (cell() == 0) {
           int depth = 1;
           while (depth > 0) {
             command = this->get_command(currentPosition++);
@@ -71,7 +70,7 @@ void BrainfuckRunner::run() {
           throw "Unbalanced Brainfuck code: unexpected ']'";
         }
         --currentDepth;
-        if (memory[pointer] != 0) {
+        if (cell() != 0) {
           currentPosition = loopBeginnings.top();
         } else if (currentDepth == 0) {
           usingBuffer = false;
@@ -107,4 +106,16 @@ BrainfuckCommand BrainfuckRunner::get_command(int position) {
   BrainfuckCommand command = bfr.get_next_command();
   commandBuffer.push_back(command);
   return command;
+}
+
+unsigned char& BrainfuckRunner::cell() {
+  int index = pointer + origin;
+  if (index < 0) {
+    tape.insert(tape.begin(), -index, 0);
+    origin += -index;
+    index = 0;
+  } else if (index >= (int)tape.size()) {
+    tape.resize(2 * index + 1, 0);
+  }
+  return tape[index];
 }

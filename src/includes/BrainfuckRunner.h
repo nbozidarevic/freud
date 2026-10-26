@@ -18,13 +18,15 @@ private:
   BrainfuckReader bfr;
   istream& input;
   ostream& output;
-  unsigned char* memory;
+  vector<unsigned char> tape;
+  int origin;
   int pointer;
   vector<BrainfuckCommand> commandBuffer;
   int commandBufferStartPosition;
   int currentDepth;
   int currentPosition;
   BrainfuckCommand get_command(int position);
+  unsigned char& cell();
   stack<int> loopBeginnings;
   bool usingBuffer;
 };

@@ -1,3 +1,7 @@
+# NOTE: objects do not track header dependencies. After changing any header
+# under src/includes, run a full `make clean && make ...` rebuild:
+# incremental builds mix stale objects with new layouts and crash.
+# (Proper dependency tracking arrives with the Phase 2 build work.)
 ANTLR := java -jar /usr/local/lib/antlr-4.7.1-complete.jar
 CC := g++
 CFLAGS := -g -Wall -std=c++11
