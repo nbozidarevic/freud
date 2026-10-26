@@ -1,0 +1,25 @@
+name: Spike tree-sitter check
+
+on:
+  push:
+    branches: ['spike/**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  spike-treesitter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install tree-sitter bindings
+        run: pip install tree-sitter tree-sitter-c
+
+      - name: Parse compile fixtures
+        run: python3 spike/treesitter/check.py
