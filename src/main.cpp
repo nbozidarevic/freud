@@ -244,10 +244,10 @@ int main(int argc, char **argv) {
   } catch (char const* error) {
     print_caught_error(error);
     print_usage();
-    return 0;
+    return 1;
   }
 
   print_unknown_command_error(command);
   print_usage();
-  return 0;
+  return 1;
 }
