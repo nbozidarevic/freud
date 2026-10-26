@@ -67,6 +67,9 @@ void BrainfuckRunner::run() {
         }
         break;
       case LOOP_END:
+        if (loopBeginnings.empty()) {
+          throw "Unbalanced Brainfuck code: unexpected ']'";
+        }
         --currentDepth;
         if (memory[pointer] != 0) {
           currentPosition = loopBeginnings.top();
@@ -78,6 +81,9 @@ void BrainfuckRunner::run() {
       default:
         break;
     }
+  }
+  if (!loopBeginnings.empty()) {
+    throw "Unbalanced Brainfuck code: unclosed '['";
   }
 }
 
