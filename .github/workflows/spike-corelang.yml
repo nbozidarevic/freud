@@ -1,0 +1,54 @@
+name: Spike core-language check
+
+on:
+  push:
+    branches: ['spike/**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  spike-corelang:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build C++ baseline
+        run: g++ -Wall -std=c++11 -o /tmp/tokdump-cpp spike/corelang/tokdump.cpp
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust port
+        run: cargo build --release --manifest-path spike/corelang/rusttok/Cargo.toml
+
+      - name: Set up Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.13.0
+
+      - name: Build Zig port
+        run: zig build-exe -O ReleaseSafe -femit-bin=/tmp/tokdump-zig spike/corelang/tokdump.zig
+
+      - name: Versions and sizes
+        run: |
+          g++ --version | head -1
+          cargo --version
+          rustc --version
+          zig version
+          wc -l spike/corelang/tokdump.cpp spike/corelang/rusttok/src/main.rs spike/corelang/tokdump.zig
+
+      - name: Differential token dump
+        run: |
+          fail=0
+          for f in tests/compile/*.c; do
+            /tmp/tokdump-cpp "$f" > /tmp/t.cpp || { echo "CPP FAILED: $f"; fail=1; continue; }
+            ./spike/corelang/rusttok/target/release/tokdump "$f" > /tmp/t.rs || { echo "RUST FAILED: $f"; fail=1; continue; }
+            /tmp/tokdump-zig "$f" > /tmp/t.zig || { echo "ZIG FAILED: $f"; fail=1; continue; }
+            cmp -s /tmp/t.cpp /tmp/t.rs || { echo "RUST DIFFERS: $f"; fail=1; }
+            cmp -s /tmp/t.cpp /tmp/t.zig || { echo "ZIG DIFFERS: $f"; fail=1; }
+            echo "$(wc -l < /tmp/t.cpp) tokens $f"
+          done
+          echo "sample:"
+          head -5 /tmp/t.cpp
+          exit $fail
