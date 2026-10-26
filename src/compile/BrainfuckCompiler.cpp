@@ -498,7 +498,25 @@ antlrcpp::Any BrainfuckCompiler::visitAssignmentExpression(SimpleCParser::Assign
         ctx->assignmentExpression()->accept(this),
         ctx->unaryExpression()->accept(this)
       );
-    }    
+    }
+    string op = ctx->assignmentOperator()->getText();
+    int rhs = ctx->assignmentExpression()->accept(this);
+    int target = ctx->unaryExpression()->accept(this);
+    int result = -1;
+    if (op == "+=") {
+      result = addValues(target, rhs);
+    } else if (op == "-=") {
+      result = subtractValues(target, rhs);
+    } else if (op == "*=") {
+      result = multiplyValues(target, rhs);
+    } else if (op == "/=") {
+      result = divideValues(target, rhs);
+    } else if (op == "%=") {
+      result = modValues(target, rhs);
+    }
+    if (result >= 0) {
+      return copyValue(result, target);
+    }
   }
   // return NULL;
   throw "Unsupported assignment expression";
@@ -596,7 +614,7 @@ antlrcpp::Any BrainfuckCompiler::visitIterationStatement(SimpleCParser::Iteratio
     SimpleCParser::ForConditionContext *forCondition = dynamic_cast<SimpleCParser::ForConditionContext*>(ctx->forCondition());
     function<void ()> initFn = [&]() -> void {};
     function<int ()> expressionFn = [&]() -> int {
-      return 0;
+      return getPointerForConstValue(1);
     };
     function<void ()> updateFn = [&]() -> void {};
 
@@ -791,6 +809,19 @@ antlrcpp::Any BrainfuckCompiler::visitPostfixExpression(SimpleCParser::PostfixEx
         }
       }
       return NULL;
+    }
+  }
+  if (ctx->children.size() == 2) {
+    string op = ctx->children[1]->getText();
+    if (op == "++" || op == "--") {
+      int target = ctx->postfixExpression()->accept(this);
+      int old = duplicateValue(target);
+      if (op == "++") {
+        copyValue(addValues(target, getPointerForConstValue(1)), target);
+      } else {
+        copyValue(subtractValues(target, getPointerForConstValue(1)), target);
+      }
+      return old;
     }
   }
   throw "Unsupported postfix expression";
@@ -998,6 +1029,15 @@ antlrcpp::Any BrainfuckCompiler::visitUnaryExpression(SimpleCParser::UnaryExpres
   }
   if (ctx->children[0]->getText() == "!") {
     return negate(ctx->unaryExpression()->accept(this));
+  }
+  if (ctx->children[0]->getText() == "++" || ctx->children[0]->getText() == "--") {
+    int target = ctx->unaryExpression()->accept(this);
+    if (ctx->children[0]->getText() == "++") {
+      copyValue(addValues(target, getPointerForConstValue(1)), target);
+    } else {
+      copyValue(subtractValues(target, getPointerForConstValue(1)), target);
+    }
+    return duplicateValue(target);
   }
   if (ctx->children[0]->getText() == "&") {
     return ctx->unaryExpression()->accept(this);
