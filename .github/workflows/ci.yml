@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ANTLR runtime from source
+        run: |
+          curl -sL --max-time 300 -o /tmp/antlr4.tar.gz https://github.com/antlr/antlr4/archive/refs/tags/4.7.1.tar.gz
+          tar xzf /tmp/antlr4.tar.gz -C /tmp
+          mkdir -p /tmp/antlr-lib/obj
+          n=0
+          for f in $(find /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -name "*.cpp"); do
+            n=$((n+1))
+            g++ -std=c++11 -O2 -I /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -c "$f" -o "/tmp/antlr-lib/obj/f$n.o"
+          done
+          ar rcs /tmp/antlr-lib/libantlr4-runtime.a /tmp/antlr-lib/obj/*.o
+
+      - name: Build
+        run: make ANTLR_LIBRARY=/tmp/antlr-lib/libantlr4-runtime.a
+
+      - name: Test
+        working-directory: tests
+        run: python3 test
