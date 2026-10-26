@@ -783,7 +783,9 @@ antlrcpp::Any BrainfuckCompiler::visitPrimaryExpression(SimpleCParser::PrimaryEx
     // If it is an identifier, return its mmoery address
     string name = ctx->Identifier()->getText();
     return memory.getVariableCell(name);
-  } else if (ctx->StringLiteral()[0]) {
+  } else if (ctx->expression()) {
+    return ctx->expression()->accept(this);
+  } else if (!ctx->StringLiteral().empty()) {
     return ctx->StringLiteral()[0]->getText();
   }
   throw "Unsupported primary expression";
