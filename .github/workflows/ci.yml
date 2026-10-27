@@ -168,3 +168,10 @@ jobs:
           done
           [ $fail -eq 0 ] && echo "all compile errors rejected by both"
           exit $fail
+
+      - name: Show io.c divergence window
+        if: failure()
+        run: |
+          ./bin/freud compile -c tests/compile/io.c 2>/dev/null | dd bs=1 skip=200 count=200 2>/dev/null; echo
+          echo "--- rust ---"
+          ./rs/target/release/bfcompile tests/compile/io.c 2>/dev/null | dd bs=1 skip=200 count=200 2>/dev/null; echo
