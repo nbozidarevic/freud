@@ -27,7 +27,7 @@ fn main() {
         }
     };
     let mut out: Vec<u8> = Vec::new();
-    ast::dump_tu(&tu, &out);
+    ast::dump_tu(&tu, &mut out);
     out.push(b'\n');
     std::io::stdout().write_all(&out).unwrap();
 }
