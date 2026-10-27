@@ -36,6 +36,13 @@ jobs:
         working-directory: tests
         run: python3 test
 
+      - name: Probe reference emission order
+        run: |
+          for f in tests/differential/micro/*.c; do
+            echo "=== $f"
+            ./bin/freud compile -c "$f"
+          done
+
   differential-tokenizer:
     runs-on: ubuntu-latest
     timeout-minutes: 15
