@@ -18,3 +18,7 @@ path = "src/bin/parsedump.rs"
 [[bin]]
 name = "bfcompile"
 path = "src/bin/bfcompile.rs"
+
+[[bin]]
+name = "bfrun"
+path = "src/bin/bfrun.rs"

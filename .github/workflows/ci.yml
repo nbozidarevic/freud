@@ -185,3 +185,57 @@ jobs:
               break
             fi
           done
+
+  differential-runner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ANTLR runtime from source
+        run: |
+          curl -sL --max-time 300 -o /tmp/antlr4.tar.gz https://github.com/antlr/antlr4/archive/refs/tags/4.7.1.tar.gz
+          tar xzf /tmp/antlr4.tar.gz -C /tmp
+          mkdir -p /tmp/antlr-lib/obj
+          n=0
+          for f in $(find /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -name "*.cpp"); do
+            n=$((n+1))
+            g++ -std=c++11 -O2 -I /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -c "$f" -o "/tmp/antlr-lib/obj/f$n.o"
+          done
+          ar rcs /tmp/antlr-lib/libantlr4-runtime.a /tmp/antlr-lib/obj/*.o
+
+      - name: Build reference CLI
+        run: make ANTLR_LIBRARY=/tmp/antlr-lib/libantlr4-runtime.a
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust runner
+        run: cargo build --release --manifest-path rs/Cargo.toml
+
+      - name: Differential run fixtures
+        run: |
+          fail=0
+          for f in tests/run/*.bf; do
+            base="${f%.bf}"
+            ec_cpp=0; ./bin/freud run -c "$f" -i "$base.in" > /tmp/r.cpp || ec_cpp=$?
+            ec_rs=0; ./rs/target/release/bfrun -c "$f" -i "$base.in" > /tmp/r.rs || ec_rs=$?
+            if [ "$ec_cpp" != "$ec_rs" ]; then echo "EXIT DIFFERS: $f ($ec_cpp vs $ec_rs)"; fail=1; fi
+            cmp -s /tmp/r.cpp /tmp/r.rs || { echo "RUST DIFFERS: $f"; cmp -l /tmp/r.cpp /tmp/r.rs | head -5; fail=1; }
+          done
+          exit $fail
+
+      - name: End-to-end Rust pipeline vs g++ oracle
+        run: |
+          fail=0
+          for f in tests/compile/*.c; do
+            base="${f%.c}"
+            ./rs/target/release/bfcompile "$f" > /tmp/e.bf || { echo "BFCOMPILE FAILED: $f"; fail=1; continue; }
+            ./rs/target/release/bfrun -c /tmp/e.bf -i "$base.in" > /tmp/e.rs || { echo "BFRUN FAILED: $f"; fail=1; continue; }
+            ./bin/freud run -c /tmp/e.bf -i "$base.in" > /tmp/e.cpp || { echo "CPP RUN FAILED: $f"; fail=1; continue; }
+            cmp -s /tmp/e.cpp /tmp/e.rs || { echo "RUNNER DIFFERS: $f"; fail=1; }
+            g++ -w "$f" -o /tmp/e.o || { echo "GCC FAILED: $f"; fail=1; continue; }
+            /tmp/e.o < "$base.in" > /tmp/e.gcc || { echo "GCC RUN FAILED: $f"; fail=1; continue; }
+            cmp -s /tmp/e.rs /tmp/e.gcc || { echo "E2E DIFFERS: $f"; fail=1; }
+          done
+          exit $fail
