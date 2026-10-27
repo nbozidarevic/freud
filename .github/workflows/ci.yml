@@ -35,3 +35,28 @@ jobs:
       - name: Test
         working-directory: tests
         run: python3 test
+
+  differential-tokenizer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build C++ reference tokenizer
+        run: g++ -Wall -std=c++11 -o /tmp/tokdump-cpp tests/differential/tokdump.cpp
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust tokenizer
+        run: cargo build --release --manifest-path rs/Cargo.toml
+
+      - name: Differential token dump
+        run: |
+          fail=0
+          for f in tests/compile/*.c; do
+            /tmp/tokdump-cpp "$f" > /tmp/t.cpp || { echo "CPP FAILED: $f"; fail=1; continue; }
+            ./rs/target/release/tokdump "$f" > /tmp/t.rs || { echo "RUST FAILED: $f"; fail=1; continue; }
+            cmp -s /tmp/t.cpp /tmp/t.rs || { echo "RUST DIFFERS: $f"; fail=1; }
+          done
+          exit $fail
