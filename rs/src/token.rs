@@ -528,7 +528,7 @@ mod tests {
     fn escape_into_covers_controls() {
         let mut out = Vec::new();
         escape_into(&mut out, b"a\nb\\c\x00d\t\re");
-        assert_eq!(out, b"a\\nb\\\\c\\0d\\te\\re");
+        assert_eq!(out, b"a\\nb\\\\c\\0d\\t\\re");
     }
 
     #[test]
