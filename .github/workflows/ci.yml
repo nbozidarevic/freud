@@ -63,3 +63,36 @@ jobs:
             cmp -s /tmp/t.cpp /tmp/t.rs || { echo "RUST DIFFERS: $f"; fail=1; }
           done
           exit $fail
+
+  parsedump-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build C++ reference parser
+        run: g++ -Wall -std=c++11 -o /tmp/parsedump-cpp tests/differential/parse.cpp
+
+      - name: Dump fixture parse trees
+        run: |
+          fail=0
+          for f in tests/compile/*.c; do
+            /tmp/parsedump-cpp "$f" > /tmp/p.sexp || { echo "PARSE FAILED: $f"; fail=1; continue; }
+            echo "$(wc -c < /tmp/p.sexp) bytes $f"
+          done
+          echo "sample:"
+          head -c 600 /tmp/p.sexp; echo
+          exit $fail
+
+      - name: Reject negative fixtures
+        run: |
+          fail=0
+          for f in tests/differential/negative/*.c; do
+            if /tmp/parsedump-cpp "$f" >/dev/null 2>&1; then
+              echo "UNEXPECTEDLY ACCEPTED: $f"
+              fail=1
+            else
+              echo "rejected as expected: $f"
+            fi
+          done
+          exit $fail
