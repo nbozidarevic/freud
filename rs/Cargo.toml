@@ -22,3 +22,7 @@ path = "src/bin/bfcompile.rs"
 [[bin]]
 name = "bfrun"
 path = "src/bin/bfrun.rs"
+
+[[bin]]
+name = "bffmt"
+path = "src/bin/bffmt.rs"
