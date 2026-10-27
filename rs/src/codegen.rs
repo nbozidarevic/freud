@@ -10,10 +10,11 @@
 //! - The closures passed to `perform_while`/`perform_for` re-run their
 //!   computation on every call (fresh cells each time), exactly like the
 //!   C++ lambdas.
-//! - Argument-evaluation order at multi-argument call sites is preserved
-//!   left-to-right (textual order); the order probe in
-//!   `tests/differential/micro/` plus the slice-4c differential pins this
-//!   against the reference build.
+//! - Argument-evaluation order at multi-argument call sites follows GCC
+//!   (right-to-left: last argument first), as measured by the order probe
+//!   in `tests/differential/micro/`. Apple Clang evaluates left-to-right,
+//!   so the reference output is platform-dependent; the byte differential
+//!   is therefore Ubuntu-only (macOS CI stays behavioral).
 
 use crate::memory::Memory;
 
@@ -315,11 +316,10 @@ impl Emitter {
 
     /// `result = (a <= b)` (`lessThanOrEqual`).
     ///
-    /// NOTE: the C++ evaluates the two operands in unspecified order;
-    /// this port assumes left-to-right (see the order probe).
+    /// Operand order is GCC right-to-left (`isEqual` first), per the probe.
     pub fn less_than_or_equal(&mut self, a: i32, b: i32) -> i32 {
-        let lt = self.less_than(a, b);
         let eq = self.is_equal(a, b);
+        let lt = self.less_than(a, b);
         self.logical_or(lt, eq)
     }
 
@@ -457,8 +457,9 @@ impl Emitter {
         self.emit(",");
         self.perform_while(
             |em| {
-                let below = em.less_than(reader, zero);
+                // GCC right-to-left: second operand first (see order probe).
                 let above = em.greater_than(reader, nine);
+                let below = em.less_than(reader, zero);
                 em.logical_or(below, above)
             },
             |em| {
@@ -468,8 +469,9 @@ impl Emitter {
         );
         self.perform_while(
             |em| {
-                let ge = em.greater_than_or_equal(reader, zero);
+                // GCC right-to-left: second operand first (see order probe).
                 let le = em.less_than_or_equal(reader, nine);
+                let ge = em.greater_than_or_equal(reader, zero);
                 em.logical_and(ge, le)
             },
             |em| {
