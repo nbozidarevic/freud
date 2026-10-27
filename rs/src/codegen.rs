@@ -26,6 +26,22 @@ pub struct Emitter {
     pointer: i32,
 }
 
+/// Compile failure: mirrors a C++ `throw "..."` site.
+///
+/// Message only, no position — the reference carries none either.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompileError {
+    pub msg: String,
+}
+
+impl std::fmt::Display for CompileError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.msg)
+    }
+}
+
+impl std::error::Error for CompileError {}
+
 impl Emitter {
     /// Fresh emitter; data pointer starts at cell 0.
     pub fn new() -> Self {
@@ -178,48 +194,51 @@ impl Emitter {
     }
 
     /// `result = a / b` in a fresh cell (`divideValues`).
-    pub fn divide_values(&mut self, a: i32, b: i32) -> i32 {
+    pub fn divide_values(&mut self, a: i32, b: i32) -> Result<i32, CompileError> {
         let a_copy = self.duplicate_value(a);
         let result = self.const_value(0);
         self.perform_while(
-            |em| em.greater_than_or_equal(a_copy, b),
+            |em| Ok(em.greater_than_or_equal(a_copy, b)?),
             |em| {
                 em.move_pointer(result);
                 em.emit("+");
                 let diff = em.subtract_values(a_copy, b);
                 em.move_value(diff, a_copy);
+                Ok(())
             },
-        );
-        result
+        )?;
+        Ok(result)
     }
 
     /// `result = a % b` in a fresh cell (`modValues`).
-    pub fn mod_values(&mut self, a: i32, b: i32) -> i32 {
+    pub fn mod_values(&mut self, a: i32, b: i32) -> Result<i32, CompileError> {
         let result = self.const_value(0);
-        let q = self.divide_values(a, b);
+        let q = self.divide_values(a, b)?;
         let prod = self.multiply_values(q, b);
         let diff = self.subtract_values(a, prod);
         self.move_value(diff, result);
-        result
+        Ok(result)
     }
 
     /// Logical NOT of `a` in a fresh cell (`negate`).
-    pub fn negate(&mut self, a: i32) -> i32 {
+    pub fn negate(&mut self, a: i32) -> Result<i32, CompileError> {
         let result = self.memory.temp_cell();
         self.perform_if_else(
             a,
             |em| {
                 em.set_value(result, 0);
+                Ok(())
             },
             |em| {
                 em.set_value(result, 1);
+                Ok(())
             },
-        );
-        result
+        )?;
+        Ok(result)
     }
 
     /// `result = (a == b)` in a fresh cell (`isEqual`).
-    pub fn is_equal(&mut self, a: i32, b: i32) -> i32 {
+    pub fn is_equal(&mut self, a: i32, b: i32) -> Result<i32, CompileError> {
         let a_copy = self.duplicate_value(a);
         let b_copy = self.duplicate_value(b);
         let result = self.const_value(0);
@@ -229,26 +248,27 @@ impl Emitter {
         self.emit("-");
         self.move_pointer(a_copy);
         self.emit("]");
-        let not_a = self.negate(a_copy);
+        let not_a = self.negate(a_copy)?;
         self.perform_if_else(
             not_a,
             |em| {
-                let not_b = em.negate(b_copy);
+                let not_b = em.negate(b_copy)?;
                 em.perform_if_else(
                     not_b,
                     |em| {
                         em.set_value(result, 1);
+                        Ok(())
                     },
-                    |_| {},
-                );
+                    |_| Ok(()),
+                )
             },
-            |_| {},
-        );
-        result
+            |_| Ok(()),
+        )?;
+        Ok(result)
     }
 
     /// `result = (a && b)` in a fresh cell (`logicalAnd`).
-    pub fn logical_and(&mut self, a: i32, b: i32) -> i32 {
+    pub fn logical_and(&mut self, a: i32, b: i32) -> Result<i32, CompileError> {
         let result = self.const_value(0);
         self.perform_if_else(
             a,
@@ -257,81 +277,86 @@ impl Emitter {
                     b,
                     |em| {
                         em.set_value(result, 1);
+                        Ok(())
                     },
-                    |_| {},
-                );
+                    |_| Ok(()),
+                )
             },
-            |_| {},
-        );
-        result
+            |_| Ok(()),
+        )?;
+        Ok(result)
     }
 
     /// `result = (a || b)` in a fresh cell (`logicalOr`).
-    pub fn logical_or(&mut self, a: i32, b: i32) -> i32 {
+    pub fn logical_or(&mut self, a: i32, b: i32) -> Result<i32, CompileError> {
         let result = self.const_value(0);
         self.perform_if_else(
             a,
             |em| {
                 em.set_value(result, 1);
+                Ok(())
             },
-            |_| {},
-        );
+            |_| Ok(()),
+        )?;
         self.perform_if_else(
             b,
             |em| {
                 em.set_value(result, 1);
+                Ok(())
             },
-            |_| {},
-        );
-        result
+            |_| Ok(()),
+        )?;
+        Ok(result)
     }
 
     /// `result = (a < b)` in a fresh cell (`lessThan`).
-    pub fn less_than(&mut self, a: i32, b: i32) -> i32 {
+    pub fn less_than(&mut self, a: i32, b: i32) -> Result<i32, CompileError> {
         let a_copy = self.duplicate_value(a);
         let b_copy = self.duplicate_value(b);
         let result = self.memory.temp_cell();
         self.move_pointer(result);
         self.emit("[-]");
         self.perform_while(
-            |em| em.logical_and(a_copy, b_copy),
+            |em| Ok(em.logical_and(a_copy, b_copy)?),
             |em| {
                 em.move_pointer(a_copy);
                 em.emit("-");
                 em.move_pointer(b_copy);
                 em.emit("-");
+                Ok(())
             },
-        );
-        let not_a = self.negate(a_copy);
-        let cond = self.logical_and(not_a, b_copy);
+        )?;
+        let not_a = self.negate(a_copy)?;
+        let cond = self.logical_and(not_a, b_copy)?;
         self.perform_if_else(
             cond,
             |em| {
                 em.set_value(result, 1);
+                Ok(())
             },
-            |_| {},
-        );
-        result
+            |_| Ok(()),
+        )?;
+        Ok(result)
     }
 
     /// `result = (a <= b)` (`lessThanOrEqual`).
     ///
     /// Operand order is GCC right-to-left (`isEqual` first), per the probe.
-    pub fn less_than_or_equal(&mut self, a: i32, b: i32) -> i32 {
-        let eq = self.is_equal(a, b);
-        let lt = self.less_than(a, b);
+    pub fn less_than_or_equal(&mut self, a: i32, b: i32) -> Result<i32, CompileError> {
+        let eq = self.is_equal(a, b)?;
+        let lt = self.less_than(a, b)?;
         self.logical_or(lt, eq)
     }
 
     /// `result = (a > b)` (`greaterThan`).
-    pub fn greater_than(&mut self, a: i32, b: i32) -> i32 {
-        let le = self.less_than_or_equal(a, b);
+    pub fn greater_than(&mut self, a: i32, b: i32) -> Result<i32, CompileError> {
+        let le = self.less_than_or_equal(a, b)?;
         self.negate(le)
     }
 
     /// `result = (a >= b)` (`greaterThanOrEqual`).
-    pub fn greater_than_or_equal(&mut self, a: i32, b: i32) -> i32 {
-        let lt = self.less_than(a, b);
+    pub fn greater_than_or_equal(&mut self, a: i32, b: i32) -> Result<i32, CompileError> {
+        let lt = self.less_than(a, b)?;
         self.negate(lt)
     }
 
@@ -339,56 +364,58 @@ impl Emitter {
     pub fn perform_if_else(
         &mut self,
         expression: i32,
-        mut iff: impl FnMut(&mut Self),
-        mut els: impl FnMut(&mut Self),
-    ) {
+        mut iff: impl FnMut(&mut Self) -> Result<(), CompileError>,
+        mut els: impl FnMut(&mut Self) -> Result<(), CompileError>,
+    ) -> Result<(), CompileError> {
         let if_value = self.duplicate_value(expression);
         let else_value = self.const_value(1);
         self.move_pointer(if_value);
         self.emit("[");
         self.set_value(if_value, 0);
         self.set_value(else_value, 0);
-        iff(self);
+        iff(self)?;
         self.move_pointer(if_value);
         self.emit("]");
         self.move_pointer(else_value);
         self.emit("[");
         self.set_value(else_value, 0);
-        els(self);
+        els(self)?;
         self.move_pointer(else_value);
         self.emit("]");
+        Ok(())
     }
 
     /// While loop, re-evaluating `cond` every iteration (`performWhile`).
     pub fn perform_while(
         &mut self,
-        mut cond: impl FnMut(&mut Self) -> i32,
-        mut body: impl FnMut(&mut Self),
-    ) {
-        let expression = cond(self);
+        mut cond: impl FnMut(&mut Self) -> Result<i32, CompileError>,
+        mut body: impl FnMut(&mut Self) -> Result<(), CompileError>,
+    ) -> Result<(), CompileError> {
+        let expression = cond(self)?;
         self.move_pointer(expression);
         self.emit("[");
         self.move_pointer(expression);
-        body(self);
-        let new_expression = cond(self);
+        body(self)?;
+        let new_expression = cond(self)?;
         self.move_value(new_expression, expression);
         self.move_pointer(expression);
         self.emit("]");
+        Ok(())
     }
 
     /// For loop over init/cond/update/body (`performFor`).
     pub fn perform_for(
         &mut self,
-        mut init: impl FnMut(&mut Self),
-        cond: impl FnMut(&mut Self) -> i32,
-        mut update: impl FnMut(&mut Self),
-        mut body: impl FnMut(&mut Self),
-    ) {
-        init(self);
+        mut init: impl FnMut(&mut Self) -> Result<(), CompileError>,
+        cond: impl FnMut(&mut Self) -> Result<i32, CompileError>,
+        mut update: impl FnMut(&mut Self) -> Result<(), CompileError>,
+        mut body: impl FnMut(&mut Self) -> Result<(), CompileError>,
+    ) -> Result<(), CompileError> {
+        init(self)?;
         self.perform_while(cond, |em| {
-            body(em);
-            update(em);
-        });
+            body(em)?;
+            update(em)
+        })
     }
 
     /// Print cell `a` as a character (`printAsChar`).
@@ -398,7 +425,7 @@ impl Emitter {
     }
 
     /// Print cell `a` as a decimal number (`printAsNumber`).
-    pub fn print_as_number(&mut self, a: i32) {
+    pub fn print_as_number(&mut self, a: i32) -> Result<(), CompileError> {
         let a_copy = self.duplicate_value(a);
         let digit = self.duplicate_value(a);
         let helper = self.const_value(0);
@@ -410,19 +437,20 @@ impl Emitter {
             a,
             |em| {
                 em.perform_while(
-                    |em| em.less_than(newly_built, a),
+                    |em| Ok(em.less_than(newly_built, a)?),
                     |em| {
                         em.set_value(helper, 1);
                         em.copy_value(a_copy, digit);
                         em.perform_while(
-                            |em| em.greater_than(digit, nine),
+                            |em| Ok(em.greater_than(digit, nine)?),
                             |em| {
-                                let q = em.divide_values(digit, ten);
+                                let q = em.divide_values(digit, ten)?;
                                 em.move_value(q, digit);
                                 let h = em.multiply_values(helper, ten);
                                 em.move_value(h, helper);
+                                Ok(())
                             },
-                        );
+                        )?;
                         let shifted = em.multiply_values(newly_built, ten);
                         let acc = em.add_values(shifted, digit);
                         em.move_value(acc, newly_built);
@@ -431,13 +459,15 @@ impl Emitter {
                         let scaled = em.multiply_values(digit, helper);
                         let rest = em.subtract_values(a_copy, scaled);
                         em.move_value(rest, a_copy);
+                        Ok(())
                     },
-                );
+                )
             },
             |em| {
                 em.print_as_char(zero_char);
+                Ok(())
             },
-        );
+        )
     }
 
     /// Read one character into cell `a` (`readAsChar`).
@@ -447,7 +477,7 @@ impl Emitter {
     }
 
     /// Read a decimal number into cell `a` (`readAsNumber`).
-    pub fn read_as_number(&mut self, a: i32) {
+    pub fn read_as_number(&mut self, a: i32) -> Result<(), CompileError> {
         let reader = self.const_value(0);
         let result = self.const_value(0);
         let zero = self.const_value(b'0');
@@ -458,20 +488,21 @@ impl Emitter {
         self.perform_while(
             |em| {
                 // GCC right-to-left: second operand first (see order probe).
-                let above = em.greater_than(reader, nine);
-                let below = em.less_than(reader, zero);
+                let above = em.greater_than(reader, nine)?;
+                let below = em.less_than(reader, zero)?;
                 em.logical_or(below, above)
             },
             |em| {
                 em.move_pointer(reader);
                 em.emit(",");
+                Ok(())
             },
-        );
+        )?;
         self.perform_while(
             |em| {
                 // GCC right-to-left: second operand first (see order probe).
-                let le = em.less_than_or_equal(reader, nine);
-                let ge = em.greater_than_or_equal(reader, zero);
+                let le = em.less_than_or_equal(reader, nine)?;
+                let ge = em.greater_than_or_equal(reader, zero)?;
                 em.logical_and(ge, le)
             },
             |em| {
@@ -481,9 +512,11 @@ impl Emitter {
                 em.move_value(acc, result);
                 em.move_pointer(reader);
                 em.emit(",");
+                Ok(())
             },
-        );
+        )?;
         self.move_value(result, a);
+        Ok(())
     }
 
     /// Print the constant byte `c` (`printChar`).
@@ -595,22 +628,22 @@ mod tests {
         // Pins allocation order: result cell index after fixed setups.
         let mut em = Emitter::new();
         let a = em.const_value(5);
-        assert_eq!(em.negate(a), 1);
+        assert_eq!(em.negate(a).unwrap(), 1);
 
         let mut em = Emitter::new();
         let a = em.const_value(5);
         let b = em.const_value(7);
-        assert_eq!(em.is_equal(a, b), 6);
+        assert_eq!(em.is_equal(a, b).unwrap(), 6);
 
         let mut em = Emitter::new();
         let a = em.const_value(5);
         let b = em.const_value(7);
-        assert_eq!(em.logical_and(a, b), 2);
+        assert_eq!(em.logical_and(a, b).unwrap(), 2);
 
         let mut em = Emitter::new();
         let a = em.const_value(5);
         let b = em.const_value(7);
-        assert_eq!(em.logical_or(a, b), 2);
+        assert_eq!(em.logical_or(a, b).unwrap(), 2);
 
         let mut em = Emitter::new();
         let a = em.const_value(5);
@@ -620,16 +653,16 @@ mod tests {
         let mut em = Emitter::new();
         let a = em.const_value(5);
         let b = em.const_value(7);
-        assert_eq!(em.divide_values(a, b), 4);
+        assert_eq!(em.divide_values(a, b).unwrap(), 4);
 
         let mut em = Emitter::new();
         let a = em.const_value(5);
         let b = em.const_value(7);
-        assert_eq!(em.mod_values(a, b), 2);
+        assert_eq!(em.mod_values(a, b).unwrap(), 2);
 
         let mut em = Emitter::new();
         let a = em.const_value(5);
         let b = em.const_value(7);
-        assert_eq!(em.less_than(a, b), 6);
+        assert_eq!(em.less_than(a, b).unwrap(), 6);
     }
 }
