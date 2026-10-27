@@ -51,6 +51,9 @@ jobs:
       - name: Build Rust tokenizer
         run: cargo build --release --manifest-path rs/Cargo.toml
 
+      - name: Run Rust unit tests
+        run: cargo test --manifest-path rs/Cargo.toml
+
       - name: Differential token dump
         run: |
           fail=0

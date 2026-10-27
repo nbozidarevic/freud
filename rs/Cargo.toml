@@ -3,6 +3,10 @@ name = "freud-core"
 version = "0.0.0"
 edition = "2021"
 
+[lib]
+name = "freud_core"
+path = "src/lib.rs"
+
 [[bin]]
 name = "tokdump"
 path = "src/main.rs"
