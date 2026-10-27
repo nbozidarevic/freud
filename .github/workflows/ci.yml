@@ -64,24 +64,32 @@ jobs:
           done
           exit $fail
 
-  parsedump-reference:
+  differential-parser:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
       - name: Build C++ reference parser
         run: g++ -Wall -std=c++11 -o /tmp/parsedump-cpp tests/differential/parse.cpp
 
-      - name: Dump fixture parse trees
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust parser
+        run: cargo build --release --manifest-path rs/Cargo.toml
+
+      - name: Differential parse dump
         run: |
           fail=0
           for f in tests/compile/*.c; do
-            /tmp/parsedump-cpp "$f" > /tmp/p.sexp || { echo "PARSE FAILED: $f"; fail=1; continue; }
-            echo "$(wc -c < /tmp/p.sexp) bytes $f"
+            /tmp/parsedump-cpp "$f" > /tmp/p.cpp || { echo "CPP FAILED: $f"; fail=1; continue; }
+            ./rs/target/release/parsedump "$f" > /tmp/p.rs || { echo "RUST FAILED: $f"; fail=1; continue; }
+            cmp -s /tmp/p.cpp /tmp/p.rs || { echo "RUST DIFFERS: $f"; cmp -l /tmp/p.cpp /tmp/p.rs | head -5; fail=1; }
+            echo "$(wc -c < /tmp/p.cpp) bytes $f"
           done
           echo "sample:"
-          head -c 600 /tmp/p.sexp; echo
+          head -c 600 /tmp/p.cpp; echo
           exit $fail
 
       - name: Reject negative fixtures
@@ -89,10 +97,11 @@ jobs:
           fail=0
           for f in tests/differential/negative/*.c; do
             if /tmp/parsedump-cpp "$f" >/dev/null 2>&1; then
-              echo "UNEXPECTEDLY ACCEPTED: $f"
-              fail=1
-            else
-              echo "rejected as expected: $f"
+              echo "CPP ACCEPTED: $f"; fail=1
+            fi
+            if ./rs/target/release/parsedump "$f" >/dev/null 2>&1; then
+              echo "RUST ACCEPTED: $f"; fail=1
             fi
           done
+          [ $fail -eq 0 ] && echo "all negatives rejected by both"
           exit $fail

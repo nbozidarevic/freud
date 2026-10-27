@@ -10,3 +10,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "tokdump"
 path = "src/main.rs"
+
+[[bin]]
+name = "parsedump"
+path = "src/bin/parsedump.rs"
