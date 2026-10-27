@@ -488,9 +488,9 @@ impl Emitter {
         self.emit(",");
         self.perform_while(
             |em| {
-                // GCC right-to-left: second operand first (see order probe).
-                let above = em.greater_than(reader, nine)?;
+                // GCC left-to-right here (measured via io.c differential).
                 let below = em.less_than(reader, zero)?;
+                let above = em.greater_than(reader, nine)?;
                 em.logical_or(below, above)
             },
             |em| {
@@ -501,9 +501,9 @@ impl Emitter {
         )?;
         self.perform_while(
             |em| {
-                // GCC right-to-left: second operand first (see order probe).
-                let le = em.less_than_or_equal(reader, nine)?;
+                // GCC left-to-right here (measured via io.c differential).
                 let ge = em.greater_than_or_equal(reader, zero)?;
+                let le = em.less_than_or_equal(reader, nine)?;
                 em.logical_and(ge, le)
             },
             |em| {

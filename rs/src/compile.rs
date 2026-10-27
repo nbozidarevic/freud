@@ -340,9 +340,22 @@ impl Emitter {
                 }
             }
             Expr::BinOp { op, l, r } => {
-                // GCC right-to-left: right operand first (see order probe).
-                let rr = self.compile_expr(r)?;
-                let ll = self.compile_expr(l)?;
+                // GCC evaluates arithmetic operands left-to-right but every
+                // other binary operator right-to-left (measured per site:
+                // the probe plus cmp.c/logic.c green runs pin comparisons
+                // and logic; addition/div/mul/mod/order_arith pin arithmetic).
+                let (ll, rr) = match op.as_slice() {
+                    b"+" | b"-" | b"*" | b"/" | b"%" => {
+                        let ll = self.compile_expr(l)?;
+                        let rr = self.compile_expr(r)?;
+                        (ll, rr)
+                    }
+                    _ => {
+                        let rr = self.compile_expr(r)?;
+                        let ll = self.compile_expr(l)?;
+                        (ll, rr)
+                    }
+                };
                 match op.as_slice() {
                     b"+" => Ok(self.add_values(ll, rr)),
                     b"-" => Ok(self.subtract_values(ll, rr)),
