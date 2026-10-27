@@ -10,11 +10,12 @@
 //! - The closures passed to `perform_while`/`perform_for` re-run their
 //!   computation on every call (fresh cells each time), exactly like the
 //!   C++ lambdas.
-//! - Argument-evaluation order at multi-argument call sites follows GCC
-//!   (right-to-left: last argument first), as measured by the order probe
-//!   in `tests/differential/micro/`. Apple Clang evaluates left-to-right,
-//!   so the reference output is platform-dependent; the byte differential
-//!   is therefore Ubuntu-only (macOS CI stays behavioral).
+//! - Argument-evaluation order at multi-argument call sites is measured
+//!   per site against GCC (order probe plus differentials): most sites are
+//!   right-to-left, but arithmetic operands and one `scanf` condition are
+//!   left-to-right. Apple Clang differs per site too, so the reference
+//!   output is platform-dependent; the byte differential is therefore
+//!   Ubuntu-only (macOS CI stays behavioral).
 
 use crate::memory::Memory;
 
@@ -488,9 +489,10 @@ impl Emitter {
         self.emit(",");
         self.perform_while(
             |em| {
-                // GCC left-to-right here (measured via io.c differential).
-                let below = em.less_than(reader, zero)?;
+                // GCC right-to-left here (measured: the divergence window
+                // shows the nine-cell duplicated second).
                 let above = em.greater_than(reader, nine)?;
+                let below = em.less_than(reader, zero)?;
                 em.logical_or(below, above)
             },
             |em| {
