@@ -37,10 +37,14 @@ impl Kind {
 ///
 /// Text is the raw source slice, except strings, which are cooked
 /// (escapes processed, quotes stripped) — exactly like the C++ reference.
+/// `raw` preserves the string's inner source text (escapes unprocessed,
+/// quotes stripped) for `printf`/`scanf` fidelity; it is `None` for every
+/// other token kind.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Tok {
     pub kind: Kind,
     pub text: Vec<u8>,
+    pub raw: Option<Vec<u8>>,
     pub line: usize,
     pub col: usize,
 }
@@ -233,6 +237,7 @@ impl<'a> Cursor<'a> {
                 toks.push(Tok {
                     kind: Kind::Int,
                     text: self.src[j0..self.i].to_vec(),
+                    raw: None,
                     line: self.line,
                     col: self.col,
                 });
@@ -253,6 +258,7 @@ impl<'a> Cursor<'a> {
                 toks.push(Tok {
                     kind,
                     text: word.to_vec(),
+                    raw: None,
                     line: self.line,
                     col: self.col,
                 });
@@ -299,6 +305,7 @@ impl<'a> Cursor<'a> {
                 toks.push(Tok {
                     kind: Kind::Char,
                     text: self.src[self.i..j].to_vec(),
+                    raw: None,
                     line: self.line,
                     col: self.col,
                 });
@@ -347,6 +354,8 @@ impl<'a> Cursor<'a> {
                 toks.push(Tok {
                     kind: Kind::String,
                     text: parts,
+                    // Inner source text: quotes at i and j-1 are stripped.
+                    raw: Some(self.src[self.i + 1..j - 1].to_vec()),
                     line: self.line,
                     col: self.col,
                 });
@@ -356,6 +365,7 @@ impl<'a> Cursor<'a> {
                 toks.push(Tok {
                     kind: Kind::Punct,
                     text: self.src[self.i..self.i + 2].to_vec(),
+                    raw: None,
                     line: self.line,
                     col: self.col,
                 });
@@ -365,6 +375,7 @@ impl<'a> Cursor<'a> {
                 toks.push(Tok {
                     kind: Kind::Punct,
                     text: vec![c],
+                    raw: None,
                     line: self.line,
                     col: self.col,
                 });
@@ -381,6 +392,7 @@ impl<'a> Cursor<'a> {
         toks.push(Tok {
             kind: Kind::End,
             text: Vec::new(),
+            raw: None,
             line: self.line,
             col: self.col,
         });
@@ -477,6 +489,16 @@ mod tests {
         assert_eq!(t[0].kind, Kind::String);
         assert_eq!((t[0].line, t[0].col), (1, 1));
         assert_eq!(t[0].text, b"a\nb\t\"q\"\\");
+    }
+
+    #[test]
+    fn strings_carry_raw_text() {
+        let t = toks(br#""a\nb""#);
+        assert_eq!(t[0].kind, Kind::String);
+        assert_eq!(t[0].text, b"a\nb");
+        assert_eq!(t[0].raw, Some(b"a\\nb".to_vec()));
+        let t = toks(b"42");
+        assert_eq!(t[0].raw, None);
     }
 
     #[test]

@@ -629,10 +629,22 @@ impl<'a> Parser<'a> {
             }
             Kind::String => {
                 let mut parts = Vec::new();
+                let mut raw: Vec<u8> = Vec::new();
+                let mut first = true;
                 while self.peek().kind == Kind::String {
-                    parts.extend_from_slice(&self.next_tok().text);
+                    let t = self.next_tok();
+                    parts.extend_from_slice(&t.text);
+                    if first {
+                        // First literal's raw text only: mirrors the C++
+                        // `StringLiteral()[0]` quirk in printf/scanf calls.
+                        raw = t.raw.expect("string token must carry raw text");
+                        first = false;
+                    }
                 }
-                Ok(Expr::StringLit(parts))
+                Ok(Expr::StringLit {
+                    cooked: parts,
+                    raw,
+                })
             }
             _ => {
                 if self.at_punct(b"(") {
@@ -876,5 +888,29 @@ mod tests {
     #[test]
     fn error_expected_expression() {
         assert_err("int f() { x = ; }", 1, 15, "expected expression, found ';'");
+    }
+
+    #[test]
+    fn pasted_string_cooks_all_keeps_first_raw() {
+        use crate::ast::{BlockItem, Expr, External, Stmt};
+
+        let tu = parse(b"int f() { s(\"a\" \"b\"); }").expect("parse failed");
+        let stmt = match &tu.0[..] {
+            [External::FuncDef(f)] => match &f.body.0[..] {
+                [BlockItem::Stmt(s)] => s,
+                _ => panic!("expected one statement"),
+            },
+            _ => panic!("expected one function"),
+        };
+        match stmt {
+            Stmt::Expr(Expr::Call { args, .. }) => match &args[..] {
+                [Expr::StringLit { cooked, raw }] => {
+                    assert_eq!(cooked.as_slice(), b"ab");
+                    assert_eq!(raw.as_slice(), b"a");
+                }
+                _ => panic!("expected one argument"),
+            },
+            _ => panic!("expected call"),
+        }
     }
 }

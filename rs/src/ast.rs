@@ -123,7 +123,12 @@ pub enum Expr {
     Paren(Box<Expr>),
     Int(Vec<u8>),
     Char(Vec<u8>),
-    StringLit(Vec<u8>),
+    StringLit {
+        /// Concatenated cooked contents (escapes processed).
+        cooked: Vec<u8>,
+        /// First literal's raw inner text (escapes unprocessed).
+        raw: Vec<u8>,
+    },
     Ident(Vec<u8>),
 }
 
@@ -377,8 +382,8 @@ fn dump_expr(e: &Expr, out: &mut Vec<u8>) {
             open_text(out, "char", t);
             close(out);
         }
-        Expr::StringLit(t) => {
-            open_text(out, "string", t);
+        Expr::StringLit { cooked, .. } => {
+            open_text(out, "string", cooked);
             close(out);
         }
         Expr::Ident(t) => {
