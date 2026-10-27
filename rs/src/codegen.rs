@@ -12,7 +12,8 @@
 //!   C++ lambdas.
 //! - Argument-evaluation order at multi-argument call sites is measured
 //!   per site against GCC (order probe plus differentials): most sites are
-//!   right-to-left, but arithmetic operands are left-to-right. Apple Clang
+//!   right-to-left, but binary-operator arithmetic operands are
+//!   left-to-right (the `scanf` accumulate site excepted). Apple Clang
 //!   differs per site too, so the reference
 //!   output is platform-dependent; the byte differential is therefore
 //!   Ubuntu-only (macOS CI stays behavioral).
@@ -510,8 +511,10 @@ impl Emitter {
                 em.logical_and(ge, le)
             },
             |em| {
-                let dig = em.subtract_values(reader, zero);
+                // GCC right-to-left here (measured via io.c differential):
+                // unlike BinOp arithmetic, the multiply side allocates first.
                 let shifted = em.multiply_values(result, ten);
+                let dig = em.subtract_values(reader, zero);
                 let acc = em.add_values(dig, shifted);
                 em.move_value(acc, result);
                 em.move_pointer(reader);
