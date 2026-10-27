@@ -12,8 +12,8 @@
 //!   C++ lambdas.
 //! - Argument-evaluation order at multi-argument call sites is measured
 //!   per site against GCC (order probe plus differentials): most sites are
-//!   right-to-left, but arithmetic operands and one `scanf` condition are
-//!   left-to-right. Apple Clang differs per site too, so the reference
+//!   right-to-left, but arithmetic operands are left-to-right. Apple Clang
+//!   differs per site too, so the reference
 //!   output is platform-dependent; the byte differential is therefore
 //!   Ubuntu-only (macOS CI stays behavioral).
 
@@ -503,9 +503,10 @@ impl Emitter {
         )?;
         self.perform_while(
             |em| {
-                // GCC left-to-right here (measured via io.c differential).
-                let ge = em.greater_than_or_equal(reader, zero)?;
+                // GCC right-to-left here (measured via io.c differential;
+                // symmetric with the first condition).
                 let le = em.less_than_or_equal(reader, nine)?;
+                let ge = em.greater_than_or_equal(reader, zero)?;
                 em.logical_and(ge, le)
             },
             |em| {
