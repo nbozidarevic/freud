@@ -228,11 +228,13 @@ impl Emitter {
         self.emit("-");
         self.move_pointer(a_copy);
         self.emit("]");
+        let not_a = self.negate(a_copy);
         self.perform_if_else(
-            self.negate(a_copy),
+            not_a,
             |em| {
+                let not_b = em.negate(b_copy);
                 em.perform_if_else(
-                    em.negate(b_copy),
+                    not_b,
                     |em| {
                         em.set_value(result, 1);
                     },
@@ -299,7 +301,8 @@ impl Emitter {
                 em.emit("-");
             },
         );
-        let cond = self.logical_and(self.negate(a_copy), b_copy);
+        let not_a = self.negate(a_copy);
+        let cond = self.logical_and(not_a, b_copy);
         self.perform_if_else(
             cond,
             |em| {
@@ -322,12 +325,14 @@ impl Emitter {
 
     /// `result = (a > b)` (`greaterThan`).
     pub fn greater_than(&mut self, a: i32, b: i32) -> i32 {
-        self.negate(self.less_than_or_equal(a, b))
+        let le = self.less_than_or_equal(a, b);
+        self.negate(le)
     }
 
     /// `result = (a >= b)` (`greaterThanOrEqual`).
     pub fn greater_than_or_equal(&mut self, a: i32, b: i32) -> i32 {
-        self.negate(self.less_than(a, b))
+        let lt = self.less_than(a, b);
+        self.negate(lt)
     }
 
     /// If/else on `expression` (`performIfElse`).
