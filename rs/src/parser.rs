@@ -844,7 +844,7 @@ mod tests {
     fn break_continue_bare_return() {
         assert_sexp(
             "int f() { while (1) { break; continue; } return; }",
-            "(tu (funcdef f (compound (while (int 1) (compound (break) (continue))) (return)))))",
+            "(tu (funcdef f (compound (while (int 1) (compound (break) (continue))) (return))))",
         );
     }
 
