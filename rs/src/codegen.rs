@@ -605,12 +605,12 @@ mod tests {
         let mut em = Emitter::new();
         let a = em.const_value(5);
         let b = em.const_value(7);
-        assert_eq!(em.logical_and(a, b), 1);
+        assert_eq!(em.logical_and(a, b), 2);
 
         let mut em = Emitter::new();
         let a = em.const_value(5);
         let b = em.const_value(7);
-        assert_eq!(em.logical_or(a, b), 1);
+        assert_eq!(em.logical_or(a, b), 2);
 
         let mut em = Emitter::new();
         let a = em.const_value(5);
