@@ -67,3 +67,32 @@ Date: 2026-10-26. Status: accepted. Closes Phase 4 (evidence: 0003,
   (`dtolnay/rust-toolchain@stable`). The Zig toolchain is needed for
   nothing outside the spike branch.
 - Spike branches retained as evidence, unmerged.
+
+## Amendment (2026-10-26): the reinvent-the-wheel concern
+
+On review, the owner challenged the hand-written parser: are we
+reinventing the wheel, especially as the C subset grows? Verdict
+stands; reasoning recorded:
+
+- The subset boundary is the product. A full-C parser accepts programs
+  we cannot transpile (`struct`, `typedef`, casts) and fails late in
+  codegen; the hand parser rejects non-subset constructs at the source
+  location with a targeted message. Tree-sitter would still need a
+  lowering pass (full-C tree → subset AST) with the same rejections —
+  fused passes, not removed work.
+- Growth is codegen-bound: Phase 6 constructs need tens of lines of
+  recursive descent each; the hard part is always BF codegen and
+  memory layout. Parsing only gets genuinely hard at
+  typedef/structs/preprocessor semantics — growth the backend likely
+  cannot follow.
+- The g++-oracle differential strategy de-risks hand parsing
+  specifically: precedence/associativity bugs surface as behavioral
+  divergence from real C compilers.
+- Conceded limitations: fail-fast single errors (no multi-error
+  recovery), less declarative than a grammar file for future
+  contributors. Acceptable for a solo transpiler CLI.
+
+Explicit revisit trigger: if the subset approaches full-C surface
+(structs/typedef/casts/preprocessor semantics), revisit Tree-sitter
+(+ `tree-sitter-cpp`). The swap stays cheap: the parser sits behind
+the AST boundary and the differential corpus verifies any front end.
