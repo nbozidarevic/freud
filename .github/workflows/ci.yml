@@ -169,12 +169,19 @@ jobs:
           [ $fail -eq 0 ] && echo "all compile errors rejected by both"
           exit $fail
 
-      - name: Show io.c divergence window
+      - name: Show first divergence window
         if: failure()
         run: |
-          ./bin/freud compile -c tests/compile/io.c 2>/dev/null > /tmp/dbg.cpp
-          ./rs/target/release/bfcompile tests/compile/io.c 2>/dev/null > /tmp/dbg.rs
-          cmp /tmp/dbg.cpp /tmp/dbg.rs || true
-          dd bs=1 skip=16900 count=300 if=/tmp/dbg.cpp 2>/dev/null; echo
-          echo "--- rust ---"
-          dd bs=1 skip=16900 count=300 if=/tmp/dbg.rs 2>/dev/null; echo
+          for f in tests/compile/*.c tests/differential/micro/*.c; do
+            ./bin/freud compile -c "$f" 2>/dev/null > /tmp/dbg.cpp
+            ./rs/target/release/bfcompile "$f" 2>/dev/null > /tmp/dbg.rs
+            if ! cmp -s /tmp/dbg.cpp /tmp/dbg.rs; then
+              echo "first divergence: $f"
+              off=$(cmp /tmp/dbg.cpp /tmp/dbg.rs | grep -o 'byte [0-9]*' | grep -o '[0-9]*')
+              skip=$((off > 150 ? off - 150 : 0))
+              dd bs=1 skip=$skip count=300 if=/tmp/dbg.cpp 2>/dev/null; echo
+              echo "--- rust ---"
+              dd bs=1 skip=$skip count=300 if=/tmp/dbg.rs 2>/dev/null; echo
+              break
+            fi
+          done
