@@ -21,9 +21,10 @@ use crate::memory::Memory;
 /// Code emitter: cell allocator, output bytes, tracked data pointer.
 #[derive(Debug, Default)]
 pub struct Emitter {
-    memory: Memory,
+    pub(crate) memory: Memory,
     output: Vec<u8>,
     pointer: i32,
+    pub(crate) break_stack: Vec<i32>,
 }
 
 /// Compile failure: mirrors a C++ `throw "..."` site.

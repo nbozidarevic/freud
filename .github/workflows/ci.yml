@@ -112,3 +112,59 @@ jobs:
           done
           [ $fail -eq 0 ] && echo "all negatives rejected by both"
           exit $fail
+
+  # Ubuntu-only: the reference output is platform-dependent (GCC evaluates
+  # multi-argument calls right-to-left, Apple Clang left-to-right), and the
+  # Rust port matches the GCC order. Syntax negatives stay in the parse
+  # differential (ANTLR recovers instead of failing, so no parity there).
+  differential-codegen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ANTLR runtime from source
+        run: |
+          curl -sL --max-time 300 -o /tmp/antlr4.tar.gz https://github.com/antlr/antlr4/archive/refs/tags/4.7.1.tar.gz
+          tar xzf /tmp/antlr4.tar.gz -C /tmp
+          mkdir -p /tmp/antlr-lib/obj
+          n=0
+          for f in $(find /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -name "*.cpp"); do
+            n=$((n+1))
+            g++ -std=c++11 -O2 -I /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -c "$f" -o "/tmp/antlr-lib/obj/f$n.o"
+          done
+          ar rcs /tmp/antlr-lib/libantlr4-runtime.a /tmp/antlr-lib/obj/*.o
+
+      - name: Build reference compiler
+        run: make ANTLR_LIBRARY=/tmp/antlr-lib/libantlr4-runtime.a
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust compiler
+        run: cargo build --release --manifest-path rs/Cargo.toml
+
+      - name: Differential Brainfuck output
+        run: |
+          fail=0
+          for f in tests/compile/*.c tests/differential/micro/*.c; do
+            ./bin/freud compile -c "$f" > /tmp/b.cpp || { echo "CPP FAILED: $f"; fail=1; continue; }
+            ./rs/target/release/bfcompile "$f" > /tmp/b.rs || { echo "RUST FAILED: $f"; fail=1; continue; }
+            cmp -s /tmp/b.cpp /tmp/b.rs || { echo "RUST DIFFERS: $f ($(wc -c < /tmp/b.cpp) vs $(wc -c < /tmp/b.rs) bytes)"; cmp -l /tmp/b.cpp /tmp/b.rs | head -5; fail=1; }
+            echo "$(wc -c < /tmp/b.cpp) bytes $f"
+          done
+          exit $fail
+
+      - name: Compile-error parity
+        run: |
+          fail=0
+          for f in tests/differential/compile_errors/*.c; do
+            if ./bin/freud compile -c "$f" >/dev/null 2>&1; then
+              echo "CPP ACCEPTED: $f"; fail=1
+            fi
+            if ./rs/target/release/bfcompile "$f" >/dev/null 2>&1; then
+              echo "RUST ACCEPTED: $f"; fail=1
+            fi
+          done
+          [ $fail -eq 0 ] && echo "all compile errors rejected by both"
+          exit $fail
