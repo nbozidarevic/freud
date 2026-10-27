@@ -38,6 +38,15 @@ fix-or-pin work for Phase 1.
 4. End-of-input (`, ` at EOF) and division-by-zero behavior are unspecified;
    Phase 1 pins and tests them against oracle-defined expectations.
 
+## Rust port notes (Phase 2)
+
+Deliberate C++-vs-Rust deviations (documented, not mirrored):
+
+1. A zero-cell `[` with no matching `]` spins forever in C++ (it keeps
+   reading `NONE` past EOF). The Rust runner reports
+   `Unbalanced Brainfuck code: unclosed '['` instead — a hang has no
+   observable output to match.
+
 ## Source language
 
 See `decisions/0001-source-language-identity.md` for what the accepted source
