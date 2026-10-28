@@ -1,6 +1,6 @@
 //! Brainfuck code formatter (`BrainfuckFormatter`).
 //!
-//! Mirrors `src/format/BrainfuckFormatter.cpp`:
+//! Ported from the retired C++ `BrainfuckFormatter` (see git history):
 //! - Pretty mode groups consecutive same-class commands (`<>`, `,.`,
 //!   `+-`) onto one indented line; `[` and `]` always start a line,
 //!   with `]` dedented first. Two spaces per depth level.

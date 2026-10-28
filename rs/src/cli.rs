@@ -1,4 +1,4 @@
-//! Shared command-line layer for the `freud` CLI (`src/main.cpp`).
+//! Shared command-line layer for the `freud` CLI (ported from retired C++ `main`).
 //!
 //! Byte-for-byte mirror: usage text (generated from the golden, as in
 //! `bfrun.rs`), flag-parsing quirks, errors on stdout, exit codes. Used

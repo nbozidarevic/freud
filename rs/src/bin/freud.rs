@@ -1,4 +1,4 @@
-//! `freud`: unified CLI (compile/run/format), mirroring `src/main.cpp`.
+//! `freud`: unified CLI (compile/run/format), ported from retired C++ `main`.
 //!
 //! Dispatch, flag parsing, and all output bytes match the C++ binary;
 //! see `cli` for the shared layer and its documented warts.

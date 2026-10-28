@@ -1,6 +1,6 @@
 //! Compile-time tape-cell allocator for Brainfuck code generation.
 //!
-//! Mirrors `src/compile/BrainfuckMemory.cpp`: a bump allocator handing out
+//! Ported from the retired C++ `BrainfuckMemory`: a bump allocator handing out
 //! cell indices from 0 upward. Named variables are memoized: asking twice
 //! for the same name yields the same cell. There is no free or scoping —
 //! indices only grow, exactly like the reference.

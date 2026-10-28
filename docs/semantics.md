@@ -38,9 +38,10 @@ fix-or-pin work for Phase 1.
 4. End-of-input (`, ` at EOF) and division-by-zero behavior are unspecified;
    Phase 1 pins and tests them against oracle-defined expectations.
 
-## Rust port notes (Phase 2)
+## Port notes (retired C++ behaviors)
 
-Deliberate C++-vs-Rust deviations (documented, not mirrored):
+Deliberate deviations from the original C++ implementation (retired in
+slice 5f; documented, not mirrored):
 
 1. A zero-cell `[` with no matching `]` spins forever in C++ (it keeps
    reading `NONE` past EOF). The Rust runner reports

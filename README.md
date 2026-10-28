@@ -2,15 +2,15 @@
 Freud – A toolset for working with the Brainfuck programming language
 
 ## Requirements
-- Unix (due to the Makefile)
-- G++
-- ANTLR 4.7.1
+- Rust (stable toolchain)
+- A C compiler (`g++`/`clang`) — only for the end-to-end oracle checks,
+  which compare transpiled-program output against natively compiled output
 
 ## Usage
 
 ```
-> make
-> ./bin/freud command [parametres]
+> cargo build --release --manifest-path rs/Cargo.toml
+> ./rs/target/release/freud command [parametres]
 ```
 
 ## Supported commands
@@ -50,4 +50,17 @@ compile [-c code-file] [-o output-file]
 
   If no output file is specified, the standard
   output is used.
+```
+
+## Tests
+
+```
+> cd tests && python3 test          # oracle + golden suite (needs the build above)
+```
+
+Byte outputs are pinned under `tests/golden/`; regenerate them (with
+review) after intentional changes:
+
+```
+> ./tests/golden/generate.sh
 ```

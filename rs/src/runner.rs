@@ -1,6 +1,6 @@
 //! Brainfuck program runner (`BrainfuckRunner` + `BrainfuckReader`).
 //!
-//! Mirrors `src/run/BrainfuckRunner.cpp` semantics:
+//! Ported from the retired C++ `BrainfuckRunner` semantics:
 //! - `u8` wrapping tape, 1024 cells, origin at 512, same growth rules
 //!   (prepend on the left, `2*index+1` resize on the right).
 //! - `,` reads one byte and leaves the cell unchanged on EOF (pinned).

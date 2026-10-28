@@ -1,6 +1,6 @@
 //! Brainfuck code generation: emitter plus emission helpers.
 //!
-//! Mirrors `src/compile/BrainfuckCompiler.cpp` helper-for-helper: same
+//! Ported from the retired C++ `BrainfuckCompiler`, helper-for-helper: same
 //! allocation order, same pointer motion, same emitted bytes. The visitor
 //! wiring (AST → helpers) lands in slice 4c.
 //!

@@ -1,9 +1,9 @@
-# Differential parse-dump format (v1)
+# Parse-dump format (v1)
 
 `parsedump FILE` writes the parse tree to stdout as one single-line
-S-expression plus `\n`, and exits 0. This format is the structural
-contract between the frozen C++ reference (`parse.cpp`) and the Rust
-core: both must produce byte-identical output on every fixture.
+S-expression plus `\n`, and exits 0. This format was the structural
+contract between the frozen C++ reference (retired in slice 5f) and
+the Rust core; it remains the parser contract, pinned by goldens.
 
 ## Serialization
 
@@ -23,7 +23,7 @@ core: both must produce byte-identical output on every fixture.
   stderr message parity is a SHOULD, verified by review and Rust unit
   tests, not by the differential.
 
-## Node shapes (frozen by the C++ reference)
+## Node shapes (frozen at C++ retirement)
 
 - `tu`: top-level `decl`/`funcdef` nodes in order (stray `;` skipped).
 - `funcdef(name)`: `[compound body]`. Parameters and return type are
