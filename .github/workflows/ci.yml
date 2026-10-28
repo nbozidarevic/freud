@@ -17,326 +17,229 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build ANTLR runtime from source
-        run: |
-          curl -sL --max-time 300 -o /tmp/antlr4.tar.gz https://github.com/antlr/antlr4/archive/refs/tags/4.7.1.tar.gz
-          tar xzf /tmp/antlr4.tar.gz -C /tmp
-          mkdir -p /tmp/antlr-lib/obj
-          n=0
-          for f in $(find /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -name "*.cpp"); do
-            n=$((n+1))
-            g++ -std=c++11 -O2 -I /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -c "$f" -o "/tmp/antlr-lib/obj/f$n.o"
-          done
-          ar rcs /tmp/antlr-lib/libantlr4-runtime.a /tmp/antlr-lib/obj/*.o
-
-      - name: Build
-        run: make ANTLR_LIBRARY=/tmp/antlr-lib/libantlr4-runtime.a
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Rust CLI
+      - name: Build
         run: cargo build --release --manifest-path rs/Cargo.toml
+
+      - name: Unit tests
+        run: cargo test --manifest-path rs/Cargo.toml
 
       - name: Test
         working-directory: tests
         run: python3 test
 
-      - name: Test (Rust CLI)
-        working-directory: tests
-        run: FREUD_BIN=../rs/target/release/freud python3 test
-
-      - name: Probe reference emission order
+      - name: Probe emission sample
         run: |
           for f in tests/differential/micro/*.c; do
             echo "=== $f"
-            ./bin/freud compile -c "$f"
+            ./rs/target/release/freud compile -c "$f"
           done
 
-  differential-tokenizer:
+  golden-tokenizer:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build C++ reference tokenizer
-        run: g++ -Wall -std=c++11 -o /tmp/tokdump-cpp tests/differential/tokdump.cpp
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Rust tokenizer
+      - name: Build
         run: cargo build --release --manifest-path rs/Cargo.toml
 
-      - name: Run Rust unit tests
-        run: cargo test --manifest-path rs/Cargo.toml
-
-      - name: Differential token dump
+      - name: Golden token dump
         run: |
           fail=0
           for f in tests/compile/*.c; do
-            /tmp/tokdump-cpp "$f" > /tmp/t.cpp || { echo "CPP FAILED: $f"; fail=1; continue; }
-            ./rs/target/release/tokdump "$f" > /tmp/t.rs || { echo "RUST FAILED: $f"; fail=1; continue; }
-            cmp -s /tmp/t.cpp /tmp/t.rs || { echo "RUST DIFFERS: $f"; fail=1; }
+            n=$(basename "$f" .c)
+            ./rs/target/release/tokdump "$f" > /tmp/t.rs || { echo "FAILED: $f"; fail=1; continue; }
+            cmp -s /tmp/t.rs "tests/golden/tokdump/$n.tok" || { echo "DIFFERS: $f"; fail=1; }
           done
           exit $fail
 
-  differential-parser:
+  golden-parser:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build C++ reference parser
-        run: g++ -Wall -std=c++11 -o /tmp/parsedump-cpp tests/differential/parse.cpp
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Rust parser
+      - name: Build
         run: cargo build --release --manifest-path rs/Cargo.toml
 
-      - name: Differential parse dump
+      - name: Golden parse dump
         run: |
           fail=0
           for f in tests/compile/*.c; do
-            /tmp/parsedump-cpp "$f" > /tmp/p.cpp || { echo "CPP FAILED: $f"; fail=1; continue; }
-            ./rs/target/release/parsedump "$f" > /tmp/p.rs || { echo "RUST FAILED: $f"; fail=1; continue; }
-            cmp -s /tmp/p.cpp /tmp/p.rs || { echo "RUST DIFFERS: $f"; cmp -l /tmp/p.cpp /tmp/p.rs | head -5; fail=1; }
-            echo "$(wc -c < /tmp/p.cpp) bytes $f"
+            n=$(basename "$f" .c)
+            ./rs/target/release/parsedump "$f" > /tmp/p.rs || { echo "FAILED: $f"; fail=1; continue; }
+            cmp -s /tmp/p.rs "tests/golden/parsedump/$n.parse" || { echo "DIFFERS: $f"; cmp -l /tmp/p.rs "tests/golden/parsedump/$n.parse" | head -5; fail=1; }
+            echo "$(wc -c < /tmp/p.rs) bytes $f"
           done
           echo "sample:"
-          head -c 600 /tmp/p.cpp; echo
+          head -c 600 /tmp/p.rs; echo
           exit $fail
 
       - name: Reject negative fixtures
         run: |
           fail=0
           for f in tests/differential/negative/*.c; do
-            if /tmp/parsedump-cpp "$f" >/dev/null 2>&1; then
-              echo "CPP ACCEPTED: $f"; fail=1
-            fi
             if ./rs/target/release/parsedump "$f" >/dev/null 2>&1; then
-              echo "RUST ACCEPTED: $f"; fail=1
+              echo "ACCEPTED: $f"; fail=1
             fi
           done
-          [ $fail -eq 0 ] && echo "all negatives rejected by both"
+          [ $fail -eq 0 ] && echo "all negatives rejected"
           exit $fail
 
-  # Ubuntu-only: the reference output is platform-dependent (GCC evaluates
-  # multi-argument calls right-to-left, Apple Clang left-to-right), and the
-  # Rust port matches the GCC order. Syntax negatives stay in the parse
-  # differential (ANTLR recovers instead of failing, so no parity there).
-  differential-codegen:
+  golden-codegen:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build ANTLR runtime from source
-        run: |
-          curl -sL --max-time 300 -o /tmp/antlr4.tar.gz https://github.com/antlr/antlr4/archive/refs/tags/4.7.1.tar.gz
-          tar xzf /tmp/antlr4.tar.gz -C /tmp
-          mkdir -p /tmp/antlr-lib/obj
-          n=0
-          for f in $(find /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -name "*.cpp"); do
-            n=$((n+1))
-            g++ -std=c++11 -O2 -I /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -c "$f" -o "/tmp/antlr-lib/obj/f$n.o"
-          done
-          ar rcs /tmp/antlr-lib/libantlr4-runtime.a /tmp/antlr-lib/obj/*.o
-
-      - name: Build reference compiler
-        run: make ANTLR_LIBRARY=/tmp/antlr-lib/libantlr4-runtime.a
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Rust compiler
+      - name: Build
         run: cargo build --release --manifest-path rs/Cargo.toml
 
-      - name: Differential Brainfuck output
+      - name: Golden Brainfuck output
         run: |
           fail=0
-          for f in tests/compile/*.c tests/differential/micro/*.c; do
-            ./bin/freud compile -c "$f" > /tmp/b.cpp || { echo "CPP FAILED: $f"; fail=1; continue; }
-            ./rs/target/release/bfcompile "$f" > /tmp/b.rs || { echo "RUST FAILED: $f"; fail=1; continue; }
-            cmp -s /tmp/b.cpp /tmp/b.rs || { echo "RUST DIFFERS: $f ($(wc -c < /tmp/b.cpp) vs $(wc -c < /tmp/b.rs) bytes)"; cmp -l /tmp/b.cpp /tmp/b.rs | head -5; fail=1; }
-            echo "$(wc -c < /tmp/b.cpp) bytes $f"
+          for f in tests/compile/*.c; do
+            n=$(basename "$f" .c)
+            ./rs/target/release/bfcompile "$f" > /tmp/b.rs || { echo "FAILED: $f"; fail=1; continue; }
+            cmp -s /tmp/b.rs "tests/golden/bf/$n.bf" || { echo "DIFFERS: $f"; fail=1; }
+            echo "$(wc -c < /tmp/b.rs) bytes $f"
+          done
+          for f in tests/differential/micro/*.c; do
+            n=$(basename "$f" .c)
+            ./rs/target/release/bfcompile "$f" > /tmp/b.rs || { echo "FAILED: $f"; fail=1; continue; }
+            cmp -s /tmp/b.rs "tests/golden/bf/micro_$n.bf" || { echo "DIFFERS: $f"; fail=1; }
           done
           exit $fail
 
-      - name: Compile-error parity
+      - name: Reject error fixtures
         run: |
           fail=0
           for f in tests/differential/compile_errors/*.c; do
-            if ./bin/freud compile -c "$f" >/dev/null 2>&1; then
-              echo "CPP ACCEPTED: $f"; fail=1
-            fi
             if ./rs/target/release/bfcompile "$f" >/dev/null 2>&1; then
-              echo "RUST ACCEPTED: $f"; fail=1
+              echo "ACCEPTED: $f"; fail=1
             fi
           done
-          [ $fail -eq 0 ] && echo "all compile errors rejected by both"
+          [ $fail -eq 0 ] && echo "all compile errors rejected"
           exit $fail
 
       - name: Show first divergence window
         if: failure()
         run: |
-          for f in tests/compile/*.c tests/differential/micro/*.c; do
-            ./bin/freud compile -c "$f" 2>/dev/null > /tmp/dbg.cpp
-            ./rs/target/release/bfcompile "$f" 2>/dev/null > /tmp/dbg.rs
-            if ! cmp -s /tmp/dbg.cpp /tmp/dbg.rs; then
+          for f in tests/compile/*.c; do
+            n=$(basename "$f" .c)
+            ./rs/target/release/bfcompile "$f" 2>/dev/null > /tmp/b.rs
+            if ! cmp -s /tmp/b.rs "tests/golden/bf/$n.bf"; then
               echo "first divergence: $f"
-              off=$(cmp /tmp/dbg.cpp /tmp/dbg.rs | grep -o 'byte [0-9]*' | grep -o '[0-9]*')
+              off=$(cmp /tmp/b.rs "tests/golden/bf/$n.bf" | grep -o 'byte [0-9]*' | grep -o '[0-9]*')
               skip=$((off > 150 ? off - 150 : 0))
-              dd bs=1 skip=$skip count=300 if=/tmp/dbg.cpp 2>/dev/null; echo
-              echo "--- rust ---"
-              dd bs=1 skip=$skip count=300 if=/tmp/dbg.rs 2>/dev/null; echo
+              dd bs=1 skip=$skip count=300 if=/tmp/b.rs 2>/dev/null; echo
+              echo "--- golden ---"
+              dd bs=1 skip=$skip count=300 if="tests/golden/bf/$n.bf" 2>/dev/null; echo
               break
             fi
           done
 
-  differential-runner:
+  golden-runner:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build ANTLR runtime from source
-        run: |
-          curl -sL --max-time 300 -o /tmp/antlr4.tar.gz https://github.com/antlr/antlr4/archive/refs/tags/4.7.1.tar.gz
-          tar xzf /tmp/antlr4.tar.gz -C /tmp
-          mkdir -p /tmp/antlr-lib/obj
-          n=0
-          for f in $(find /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -name "*.cpp"); do
-            n=$((n+1))
-            g++ -std=c++11 -O2 -I /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -c "$f" -o "/tmp/antlr-lib/obj/f$n.o"
-          done
-          ar rcs /tmp/antlr-lib/libantlr4-runtime.a /tmp/antlr-lib/obj/*.o
-
-      - name: Build reference CLI
-        run: make ANTLR_LIBRARY=/tmp/antlr-lib/libantlr4-runtime.a
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Rust runner
+      - name: Build
         run: cargo build --release --manifest-path rs/Cargo.toml
 
-      - name: Differential run fixtures
+      - name: Golden run fixtures
         run: |
           fail=0
           for f in tests/run/*.bf; do
             base="${f%.bf}"
-            ec_cpp=0; ./bin/freud run -c "$f" -i "$base.in" > /tmp/r.cpp || ec_cpp=$?
-            ec_rs=0; ./rs/target/release/bfrun -c "$f" -i "$base.in" > /tmp/r.rs || ec_rs=$?
-            if [ "$ec_cpp" != "$ec_rs" ]; then echo "EXIT DIFFERS: $f ($ec_cpp vs $ec_rs)"; fail=1; fi
-            cmp -s /tmp/r.cpp /tmp/r.rs || { echo "RUST DIFFERS: $f"; cmp -l /tmp/r.cpp /tmp/r.rs | head -5; fail=1; }
+            ec_rs=0; timeout 60 ./rs/target/release/bfrun -c "$f" -i "$base.in" > /tmp/r.rs || ec_rs=$?
+            exp=0; case "$base" in *unbalanced*) exp=1;; esac
+            if [ "$ec_rs" != "$exp" ]; then echo "EXIT DIFFERS: $f ($ec_rs vs $exp)"; fail=1; fi
+            cmp -s /tmp/r.rs "$base.out" || { echo "DIFFERS: $f"; fail=1; }
           done
           exit $fail
 
-      - name: End-to-end Rust pipeline vs g++ oracle
+      - name: End-to-end pipeline vs g++ oracle
         run: |
           fail=0
           for f in tests/compile/*.c; do
             base="${f%.c}"
             ./rs/target/release/bfcompile "$f" > /tmp/e.bf || { echo "BFCOMPILE FAILED: $f"; fail=1; continue; }
-            ./rs/target/release/bfrun -c /tmp/e.bf -i "$base.in" > /tmp/e.rs || { echo "BFRUN FAILED: $f"; fail=1; continue; }
-            ./bin/freud run -c /tmp/e.bf -i "$base.in" > /tmp/e.cpp || { echo "CPP RUN FAILED: $f"; fail=1; continue; }
-            cmp -s /tmp/e.cpp /tmp/e.rs || { echo "RUNNER DIFFERS: $f"; fail=1; }
+            timeout 300 ./rs/target/release/bfrun -c /tmp/e.bf -i "$base.in" > /tmp/e.rs || { echo "BFRUN FAILED: $f"; fail=1; continue; }
             g++ -w "$f" -o /tmp/e.o || { echo "GCC FAILED: $f"; fail=1; continue; }
             /tmp/e.o < "$base.in" > /tmp/e.gcc || { echo "GCC RUN FAILED: $f"; fail=1; continue; }
             cmp -s /tmp/e.rs /tmp/e.gcc || { echo "E2E DIFFERS: $f"; fail=1; }
           done
           exit $fail
 
-  differential-format:
+  golden-format:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build ANTLR runtime from source
-        run: |
-          curl -sL --max-time 300 -o /tmp/antlr4.tar.gz https://github.com/antlr/antlr4/archive/refs/tags/4.7.1.tar.gz
-          tar xzf /tmp/antlr4.tar.gz -C /tmp
-          mkdir -p /tmp/antlr-lib/obj
-          n=0
-          for f in $(find /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -name "*.cpp"); do
-            n=$((n+1))
-            g++ -std=c++11 -O2 -I /tmp/antlr4-4.7.1/runtime/Cpp/runtime/src -c "$f" -o "/tmp/antlr-lib/obj/f$n.o"
-          done
-          ar rcs /tmp/antlr-lib/libantlr4-runtime.a /tmp/antlr-lib/obj/*.o
-
-      - name: Build reference CLI
-        run: make ANTLR_LIBRARY=/tmp/antlr-lib/libantlr4-runtime.a
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Rust formatter
+      - name: Build
         run: cargo build --release --manifest-path rs/Cargo.toml
 
-      - name: Differential format fixtures
+      - name: Golden format fixtures
         run: |
           fail=0
           for f in tests/format/*.in; do
-            base="${f%.in}"
-            ec_cpp=0; ./bin/freud format -c "$f" > /tmp/f.cpp || ec_cpp=$?
-            ec_rs=0; ./rs/target/release/bffmt -c "$f" > /tmp/f.rs || ec_rs=$?
-            if [ "$ec_cpp" != "$ec_rs" ]; then echo "EXIT DIFFERS: $f ($ec_cpp vs $ec_rs)"; fail=1; fi
-            cmp -s /tmp/f.cpp /tmp/f.rs || { echo "RUST DIFFERS: $f"; cmp -l /tmp/f.cpp /tmp/f.rs | head -5; fail=1; }
-            cmp -s /tmp/f.rs "$base.out" || { echo "GOLDEN DIFFERS: $f"; fail=1; }
-            ec_cpp=0; ./bin/freud format -c "$f" -m > /tmp/fm.cpp || ec_cpp=$?
-            ec_rs=0; ./rs/target/release/bffmt -c "$f" -m > /tmp/fm.rs || ec_rs=$?
-            if [ "$ec_cpp" != "$ec_rs" ]; then echo "EXIT DIFFERS: $f -m ($ec_cpp vs $ec_rs)"; fail=1; fi
-            cmp -s /tmp/fm.cpp /tmp/fm.rs || { echo "RUST DIFFERS: $f -m"; cmp -l /tmp/fm.cpp /tmp/fm.rs | head -5; fail=1; }
+            base="${f%.in}"; n=$(basename "$f" .in)
+            ./rs/target/release/bffmt -c "$f" > /tmp/f.rs || { echo "FAILED: $f"; fail=1; continue; }
+            cmp -s /tmp/f.rs "$base.out" || { echo "DIFFERS: $f"; fail=1; }
+            ./rs/target/release/bffmt -c "$f" -m > /tmp/fm.rs || { echo "FAILED: $f -m"; fail=1; continue; }
+            cmp -s /tmp/fm.rs "tests/golden/format-min/$n.out" || { echo "DIFFERS: $f -m"; fail=1; }
           done
           exit $fail
 
-      - name: CLI error parity
+      - name: Golden CLI cases
         run: |
           fail=0
           t() {
             echo "check: $1"
-            ec_cpp=0; timeout 60 bash -c "$2" > /tmp/c.cpp || ec_cpp=$?
-            ec_rs=0; timeout 60 bash -c "$3" > /tmp/c.rs || ec_rs=$?
-            if [ "$ec_cpp" != "$ec_rs" ]; then echo "EXIT DIFFERS: $1 ($ec_cpp vs $ec_rs)"; fail=1; fi
-            cmp -s /tmp/c.cpp /tmp/c.rs || { echo "CLI DIFFERS: $1"; fail=1; }
+            ec=0; timeout 60 bash -c "$3" > /tmp/c.rs || ec=$?
+            if [ "$ec" != "$2" ]; then echo "EXIT DIFFERS: $1 ($ec vs $2)"; fail=1; fi
+            cmp -s /tmp/c.rs "tests/golden/cli/$1.out" || { echo "DIFFERS: $1"; fail=1; }
           }
-          t "cli-no-args" './bin/freud' './rs/target/release/freud'
-          t "cli-unknown-command" './bin/freud bogus' './rs/target/release/freud bogus'
-          t "cli-unknown-with-bad-flag" './bin/freud bogus -c' './rs/target/release/freud bogus -c'
-          t "run-no-args" './bin/freud run' './rs/target/release/bfrun'
-          t "run-c-missing" './bin/freud run -c' './rs/target/release/bfrun -c'
-          t "run-i-missing" './bin/freud run -c tests/run/nested.bf -i' './rs/target/release/bfrun -c tests/run/nested.bf -i'
-          t "run-o-missing" './bin/freud run -c tests/run/nested.bf -o' './rs/target/release/bfrun -c tests/run/nested.bf -o'
-          t "format-c-missing" './bin/freud format -c' './rs/target/release/bffmt -c'
-          t "format-o-missing" './bin/freud format -c tests/format/squares.in -o' './rs/target/release/bffmt -c tests/format/squares.in -o'
-          t "run-unknown-flag" './bin/freud run -c tests/run/nested.bf -i tests/run/nested.in -z' './rs/target/release/bfrun -c tests/run/nested.bf -i tests/run/nested.in -z'
-          t "format-i-ignored" './bin/freud format -c tests/format/squares.in -i whatever' './rs/target/release/bffmt -c tests/format/squares.in -i whatever'
-          t "run-missing-input" './bin/freud run -c tests/run/eof.bf -i /nonexistent-xyz' './rs/target/release/bfrun -c tests/run/eof.bf -i /nonexistent-xyz'
-          t "run-bad-output" './bin/freud run -c tests/run/nested.bf -i tests/run/nested.in -o /nonexistent-dir-xyz/f' './rs/target/release/bfrun -c tests/run/nested.bf -i tests/run/nested.in -o /nonexistent-dir-xyz/f'
-          t "format-bad-output" './bin/freud format -c tests/format/squares.in -o /nonexistent-dir-xyz/f' './rs/target/release/bffmt -c tests/format/squares.in -o /nonexistent-dir-xyz/f'
-          ec_cpp=0; timeout 60 ./bin/freud run -c tests/run/nested.bf -i tests/run/nested.in -o /tmp/c.cpp.o || ec_cpp=$?
-          ec_rs=0; timeout 60 ./rs/target/release/bfrun -c tests/run/nested.bf -i tests/run/nested.in -o /tmp/c.rs.o || ec_rs=$?
-          if [ "$ec_cpp" != "$ec_rs" ]; then echo "EXIT DIFFERS: run-to-file"; fail=1; fi
-          cmp -s /tmp/c.cpp.o /tmp/c.rs.o || { echo "CLI DIFFERS: run-to-file"; fail=1; }
-          ec_cpp=0; timeout 60 ./bin/freud format -c tests/format/squares.in -o /tmp/c.cpp.of || ec_cpp=$?
-          ec_rs=0; timeout 60 ./rs/target/release/bffmt -c tests/format/squares.in -o /tmp/c.rs.of || ec_rs=$?
-          if [ "$ec_cpp" != "$ec_rs" ]; then echo "EXIT DIFFERS: format-to-file"; fail=1; fi
-          cmp -s /tmp/c.cpp.of /tmp/c.rs.of || { echo "CLI DIFFERS: format-to-file"; fail=1; }
-          # Known C++ quirk (see semantics.md): a missing code file spins
-          # forever, so no differential here — pin both sides instead.
-          printf '\n' > /tmp/nl
-          ec_cpp=0; timeout 10 ./bin/freud run -c /nonexistent-xyz > /tmp/c.cpp || ec_cpp=$?
-          if [ "$ec_cpp" != "124" ]; then echo "CPP QUIRK CHANGED: run-missing-code exit $ec_cpp"; fail=1; fi
-          ec_rs=0; timeout 60 ./rs/target/release/bfrun -c /nonexistent-xyz > /tmp/c.rs || ec_rs=$?
-          if [ "$ec_rs" != "0" ]; then echo "EXIT DIFFERS: bfrun-missing-code ($ec_rs)"; fail=1; fi
-          cmp -s /tmp/c.rs /dev/null || { echo "OUTPUT DIFFERS: bfrun-missing-code"; fail=1; }
-          ec_cpp=0; timeout 10 ./bin/freud format -c /nonexistent-xyz > /tmp/c.cpp || ec_cpp=$?
-          if [ "$ec_cpp" != "124" ]; then echo "CPP QUIRK CHANGED: format-missing-code exit $ec_cpp"; fail=1; fi
-          ec_rs=0; timeout 60 ./rs/target/release/bffmt -c /nonexistent-xyz > /tmp/c.rs || ec_rs=$?
-          if [ "$ec_rs" != "0" ]; then echo "EXIT DIFFERS: bffmt-missing-code ($ec_rs)"; fail=1; fi
-          cmp -s /tmp/c.rs /tmp/nl || { echo "OUTPUT DIFFERS: bffmt-missing-code"; fail=1; }
+          F=./rs/target/release/freud
+          t "no-args" 0 "$F"
+          t "unknown" 1 "$F bogus"
+          t "unknown-badflag" 1 "$F bogus -c"
+          t "run-no-args" 1 "$F run"
+          t "run-c-missing" 1 "$F run -c"
+          t "run-i-missing" 1 "$F run -c tests/run/nested.bf -i"
+          t "run-o-missing" 1 "$F run -c tests/run/nested.bf -o"
+          t "format-c-missing" 1 "$F format -c"
+          t "format-o-missing" 1 "$F format -c tests/format/squares.in -o"
+          t "run-unknown-flag" 0 "$F run -c tests/run/nested.bf -i tests/run/nested.in -z"
+          t "format-i-ignored" 0 "$F format -c tests/format/squares.in -i whatever"
+          t "run-missing-input" 0 "$F run -c tests/run/eof.bf -i /nonexistent-xyz"
+          t "run-bad-output" 0 "$F run -c tests/run/nested.bf -i tests/run/nested.in -o /nonexistent-dir-xyz/f"
+          t "format-bad-output" 0 "$F format -c tests/format/squares.in -o /nonexistent-dir-xyz/f"
+          t "run-missing-code" 0 "$F run -c /nonexistent-xyz"
+          t "format-missing-code" 0 "$F format -c /nonexistent-xyz"
+          timeout 60 $F run -c tests/run/nested.bf -i tests/run/nested.in -o /tmp/c.o || { echo "FAILED: run-to-file"; fail=1; }
+          cmp -s /tmp/c.o tests/run/nested.out || { echo "DIFFERS: run-to-file"; fail=1; }
+          timeout 60 $F format -c tests/format/squares.in -o /tmp/c.of || { echo "FAILED: format-to-file"; fail=1; }
+          cmp -s /tmp/c.of tests/format/squares.out || { echo "DIFFERS: format-to-file"; fail=1; }
           exit $fail

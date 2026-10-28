@@ -7,7 +7,7 @@ import sys
 
 failed = False
 
-freud = os.environ.get("FREUD_BIN", "../bin/freud")
+freud = os.environ.get("FREUD_BIN", "../rs/target/release/freud")
 
 tests_compile_path = "./compile"
 tests_format_path = "./format"
