@@ -1,18 +1,19 @@
-//! Shared command-line layer for the `freud` CLI (ported from retired C++ `main`).
+//! Shared command-line layer for the `freud` CLI.
 //!
-//! Byte-for-byte mirror: usage text (generated from the golden, as in
-//! `bfrun.rs`), flag-parsing quirks, errors on stdout, exit codes. Used
-//! by the unified `freud` binary and the differential harnesses.
-//!
-//! Mirrored warts (revisit in the Phase 3 CLI reframe):
-//! - Unopenable input is empty and unopenable output is a sink (silent
-//!   C++ stream failures).
-//! - Unopenable code reads as empty. C++ instead spins forever here
-//!   (`BrainfuckReader` never sees EOF on a failed stream) — a hang is
-//!   documented, not mirrored (see `docs/semantics.md`).
-//! - On compile errors, no partial output precedes the message: C++
-//!   emits whatever the visitor generated before the throw, while the
-//!   port compiles all-or-nothing. Error text, usage, and exit 1 match.
+//! Transpile-first contract:
+//! - `compile` is the default command: `freud program.c -o program.bf`
+//!   just works. `run` and `format` are auxiliary subcommands.
+//! - The code file is positional or `-c`; output is `-o` (stdout by
+//!   default); run input is `-i` (stdin by default). Without a code
+//!   file, `compile`/`format` read stdin; `run` requires a file.
+//! - `-i` only exists for `run`, `-m` only affects `format`; anything
+//!   else unknown is ignored.
+//! - Errors go to stderr with usage, exit 1. Unopenable files are
+//!   errors (the retired C++ CLI spun forever on missing code and
+//!   silently discarded missing input/output — not mirrored).
+//! - On compile errors, no partial output precedes the message (the
+//!   port compiles all-or-nothing); error text, usage, and exit 1 match
+//!   the old shape.
 
 use std::fs::File;
 use std::io::{self, Read, Write};
@@ -20,25 +21,36 @@ use std::process::exit;
 
 use crate::{compile, format, runner};
 
-pub const USAGE: &str = "Usage:\n\t\x1b[1mfreud\x1b[0m \x1b[4mcommand\x1b[0m [parametres]\n\nSupported commands:\n\n\t\x1b[1mcompile\x1b[0m [-c code-file] [-o output-file]\n\n\t\tCompiles the specified C program to Brainfuck.\n\n\t\tIf no code file is specified, the standard\n\t\tinput is used.\n\n\t\tIf no output file is specified, the standard\n\t\toutput is used.\n\n\t\x1b[1mformat\x1b[0m [-c code-file] [-o output-file] [-m]\n\n\t\tFormats the specified Brainfuck program by removing all\n\t\tinvalid characters and adding indentation.\n\n\t\tIf no code file is specified, the standard\n\t\tinput is used.\n\n\t\tIf no output file is specified, the standard\n\t\toutput is used.\n\n\t\tIf the -m flag is specified, all whitespace is removed.\n\n\t\x1b[1mrun\x1b[0m -c code-file [-i input-file] [-o output-file]\n\n\t\tExecutes the specified Brainfuck program.\n\n\t\tIf no input file is specified, the standard\n\t\tinput is used.\n\n\t\tIf no output file is specified, the standard\n\t\toutput is used.\n\n";
+pub const USAGE: &str = "Usage: freud [command] [file] [options]\n\nCompiles by default: `freud program.c -o program.bf` transpiles\nprogram.c. Without -o, output goes to stdout; without a file, input\ncomes from stdin (`run` requires a file).\n\nCommands:\n  compile    Transpile C source to Brainfuck (the default command)\n  run        Run a Brainfuck program\n  format     Pretty-print Brainfuck (-m minifies)\n  help       Show this help\n\nOptions:\n  -c file    Code file (same as the positional file)\n  -o file    Output file (default stdout)\n  -i file    Input file for run (default stdin)\n  -m         Minify (format only)\n";
 
-pub const HEADER: &str =
-    "Freud \u{2013} A toolset for working with the Brainfuck programming language\n\n";
+pub const HEADER: &str = "freud \u{2013} C-to-Brainfuck transpiler\n\n";
 
 /// Parsed flags (`parse_params`).
 pub struct Params {
     pub code: Option<String>,
+    pub positional: Vec<String>,
     pub input: Option<String>,
     pub output: Option<String>,
     pub minify: bool,
 }
 
+impl Params {
+    /// The code file: explicit `-c` wins, else the first positional arg.
+    pub fn code_file(&self) -> Option<&str> {
+        self.code
+            .as_deref()
+            .or_else(|| self.positional.first().map(String::as_str))
+    }
+}
+
 /// Parse flags for `command`: `-c`/`-o` consume the next arg (missing
 /// value is an error), `-i` only exists for `run`, `-m` is recorded for
-/// every command, anything else is ignored.
+/// every command, bare args are collected as positional files, anything
+/// else is ignored.
 pub fn parse_params(command: &str, args: &[String]) -> Result<Params, &'static str> {
     let mut p = Params {
         code: None,
+        positional: Vec::new(),
         input: None,
         output: None,
         minify: false,
@@ -71,24 +83,25 @@ pub fn parse_params(command: &str, args: &[String]) -> Result<Params, &'static s
                 }
             }
             "-m" => p.minify = true,
-            _ => {}
+            s if s.starts_with('-') => {}
+            s => p.positional.push(s.to_string()),
         }
         i += 1;
     }
     Ok(p)
 }
 
-/// Print `msg` plus usage on stdout and exit 1 (`print_caught_error`).
+/// Print `msg` plus usage on stderr and exit 1.
 pub fn fail(msg: &str) -> ! {
-    let stdout = io::stdout();
-    let mut h = stdout.lock();
+    let stderr = io::stderr();
+    let mut h = stderr.lock();
     let _ = writeln!(h, "{}\n", msg);
     let _ = h.write_all(USAGE.as_bytes());
     let _ = h.flush();
     exit(1);
 }
 
-/// Print the header plus usage on stdout (no-args invocation).
+/// Print the header plus usage on stdout (no-args and `help`).
 pub fn print_header_and_usage() {
     let stdout = io::stdout();
     let mut h = stdout.lock();
@@ -97,94 +110,84 @@ pub fn print_header_and_usage() {
     let _ = h.flush();
 }
 
-/// Print the unknown-command error plus usage on stdout.
-pub fn print_unknown_command(command: &str) {
-    let stdout = io::stdout();
-    let mut h = stdout.lock();
-    let _ = writeln!(h, "Unknown command \"{}\".\n", command);
-    let _ = h.write_all(USAGE.as_bytes());
-    let _ = h.flush();
-}
-
-/// Read code bytes: file, or stdin when `-c` is absent. Unopenable
-/// files read as empty; a mid-read failure keeps what was read.
-pub fn read_code(path: Option<&str>) -> Vec<u8> {
-    let mut buf = Vec::new();
-    match path {
-        Some(p) => {
-            if let Ok(mut f) = File::open(p) {
-                let _ = f.read_to_end(&mut buf);
-            }
-        }
-        None => {
-            let _ = io::stdin().read_to_end(&mut buf);
-        }
-    }
-    buf
-}
-
-/// Open the run input: file, or stdin when `-i` is absent. Unopenable
-/// files read as empty.
-pub fn open_input(path: Option<&str>) -> Box<dyn Read> {
+/// Read code bytes: file, or stdin when no file was given. Unopenable
+/// files are errors; a mid-read failure keeps what was read.
+pub fn read_code(path: Option<&str>) -> Result<Vec<u8>, String> {
     match path {
         Some(p) => match File::open(p) {
-            Ok(f) => Box::new(f),
-            Err(_) => Box::new(io::empty()),
+            Ok(mut f) => {
+                let mut buf = Vec::new();
+                let _ = f.read_to_end(&mut buf);
+                Ok(buf)
+            }
+            Err(_) => Err(format!("Cannot open code file '{}'.", p)),
         },
-        None => Box::new(io::stdin()),
+        None => {
+            let mut buf = Vec::new();
+            let _ = io::stdin().read_to_end(&mut buf);
+            Ok(buf)
+        }
     }
 }
 
-/// Open an output: file, or stdout when `-o` is absent. Unopenable
-/// files behave as a sink.
-pub fn open_output(path: Option<&str>) -> Box<dyn Write> {
+/// Open the run input: file, or stdin when `-i` is absent.
+pub fn open_input(path: Option<&str>) -> Result<Box<dyn Read>, String> {
+    match path {
+        Some(p) => match File::open(p) {
+            Ok(f) => Ok(Box::new(f)),
+            Err(_) => Err(format!("Cannot open input file '{}'.", p)),
+        },
+        None => Ok(Box::new(io::stdin())),
+    }
+}
+
+/// Open an output: file, or stdout when `-o` is absent.
+pub fn open_output(path: Option<&str>) -> Result<Box<dyn Write>, String> {
     match path {
         Some(p) => match File::create(p) {
-            Ok(f) => Box::new(f),
-            Err(_) => Box::new(io::sink()),
+            Ok(f) => Ok(Box::new(f)),
+            Err(_) => Err(format!("Cannot open output file '{}'.", p)),
         },
-        None => Box::new(io::stdout()),
+        None => Ok(Box::new(io::stdout())),
     }
 }
 
-/// `freud compile`: C-subset source to Brainfuck. Returns the error
-/// message on failure (the caller reports it with usage).
+/// `compile`: C-subset source to Brainfuck. Returns the error message
+/// on failure (the caller reports it with usage).
 pub fn cmd_compile(p: &Params) -> Result<(), String> {
-    let src = read_code(p.code.as_deref());
+    let src = read_code(p.code_file())?;
     let bf = compile::compile(&src).map_err(|e| e.to_string())?;
-    let mut out = open_output(p.output.as_deref());
+    let mut out = open_output(p.output.as_deref())?;
     let _ = out.write_all(&bf);
     let _ = out.flush();
     Ok(())
 }
 
-/// `freud run`: execute a Brainfuck program. Returns the error message
-/// on failure (the caller reports it with usage).
-pub fn cmd_run(p: &Params) -> Result<(), &'static str> {
-    let code_path = match p.code.as_deref() {
+/// `run`: execute a Brainfuck program. Returns the error message on
+/// failure (the caller reports it with usage).
+pub fn cmd_run(p: &Params) -> Result<(), String> {
+    let code_path = match p.code_file() {
         Some(path) => path,
-        None => return Err("Parameter -c is required"),
+        None => return Err("run requires a code file.".to_string()),
     };
-    let mut code_bytes = Vec::new();
-    if let Ok(mut f) = File::open(code_path) {
-        let _ = f.read_to_end(&mut code_bytes);
-    }
-    let mut input = open_input(p.input.as_deref());
-    let mut output = open_output(p.output.as_deref());
+    let code_bytes = read_code(Some(code_path))?;
+    let mut input = open_input(p.input.as_deref())?;
+    let mut output = open_output(p.output.as_deref())?;
     if let Err(e) = runner::run(&code_bytes, &mut input, &mut output) {
-        // Flush program output first so the error lands after it,
-        // exactly like the C++ `cout` interleaving.
+        // Flush program output first so the error lands after it.
         let _ = output.flush();
-        return Err(e);
+        return Err(e.to_string());
     }
     let _ = output.flush();
     Ok(())
 }
 
-/// `freud format`: pretty-print (`minify` strips instead).
-pub fn cmd_format(p: &Params) {
-    let src = read_code(p.code.as_deref());
-    let mut out = open_output(p.output.as_deref());
+/// `format`: pretty-print (`minify` strips instead). Returns the error
+/// message on failure (the caller reports it with usage).
+pub fn cmd_format(p: &Params) -> Result<(), String> {
+    let src = read_code(p.code_file())?;
+    let mut out = open_output(p.output.as_deref())?;
     format::format(&src, &mut out, p.minify);
     let _ = out.flush();
+    Ok(())
 }

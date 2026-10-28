@@ -27,20 +27,24 @@ for f in format/*.in; do
   n=${f%.in}; n=${n#format/}
   "$FREUD" format -c "$f" -m > "golden/format-min/$n.out"
 done
-"$FREUD" > golden/cli/no-args.out
-"$FREUD" bogus > golden/cli/unknown.out || true
-"$FREUD" bogus -c > golden/cli/unknown-badflag.out || true
-"$FREUD" run > golden/cli/run-no-args.out || true
-"$FREUD" run -c > golden/cli/run-c-missing.out || true
-"$FREUD" run -c run/nested.bf -i > golden/cli/run-i-missing.out || true
-"$FREUD" run -c run/nested.bf -o > golden/cli/run-o-missing.out || true
-"$FREUD" format -c > golden/cli/format-c-missing.out || true
-"$FREUD" format -c format/squares.in -o > golden/cli/format-o-missing.out || true
-"$FREUD" run -c run/nested.bf -i run/nested.in -z > golden/cli/run-unknown-flag.out
-"$FREUD" format -c format/squares.in -i whatever > golden/cli/format-i-ignored.out
-"$FREUD" run -c run/eof.bf -i /nonexistent-xyz > golden/cli/run-missing-input.out
-"$FREUD" run -c run/nested.bf -i run/nested.in -o /nonexistent-dir-xyz/f > golden/cli/run-bad-output.out
-"$FREUD" format -c format/squares.in -o /nonexistent-dir-xyz/f > golden/cli/format-bad-output.out
-"$FREUD" run -c /nonexistent-xyz > golden/cli/run-missing-code.out
-"$FREUD" format -c /nonexistent-xyz > golden/cli/format-missing-code.out
+# Errors go to stderr; goldens capture stdout+stderr combined.
+"$FREUD" > golden/cli/no-args.out 2>&1
+"$FREUD" help > golden/cli/help.out 2>&1
+"$FREUD" --version > golden/cli/version.out 2>&1
+"$FREUD" -c > golden/cli/compile-c-missing.out 2>&1 || true
+"$FREUD" run > golden/cli/run-no-file.out 2>&1 || true
+"$FREUD" run -c > golden/cli/run-c-missing.out 2>&1 || true
+"$FREUD" run -c run/nested.bf -i > golden/cli/run-i-missing.out 2>&1 || true
+"$FREUD" run -c run/nested.bf -o > golden/cli/run-o-missing.out 2>&1 || true
+"$FREUD" format -c > golden/cli/format-c-missing.out 2>&1 || true
+"$FREUD" format -c format/squares.in -o > golden/cli/format-o-missing.out 2>&1 || true
+"$FREUD" run -c run/nested.bf -i run/nested.in -z > golden/cli/run-unknown-flag.out 2>&1
+"$FREUD" format -c format/squares.in -i whatever > golden/cli/format-i-ignored.out 2>&1
+"$FREUD" run -c run/eof.bf -i /nonexistent-xyz > golden/cli/run-missing-input.out 2>&1 || true
+"$FREUD" run -c run/nested.bf -i run/nested.in -o /nonexistent-dir-xyz/f > golden/cli/run-bad-output.out 2>&1 || true
+"$FREUD" format -c format/squares.in -o /nonexistent-dir-xyz/f > golden/cli/format-bad-output.out 2>&1 || true
+"$FREUD" run -c /nonexistent-xyz > golden/cli/run-missing-code.out 2>&1 || true
+"$FREUD" format -c /nonexistent-xyz > golden/cli/format-missing-code.out 2>&1 || true
+"$FREUD" compile -c /nonexistent-xyz > golden/cli/compile-missing-code.out 2>&1 || true
+"$FREUD" /nonexistent-xyz > golden/cli/compile-bare-missing.out 2>&1 || true
 echo "goldens written: $(find golden -type f | wc -l) files, $(du -sh golden | cut -f1)"

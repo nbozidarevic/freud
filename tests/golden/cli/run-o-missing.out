@@ -1,40 +1,19 @@
 Parameter -o is missing a value.
 
-Usage:
-	[1mfreud[0m [4mcommand[0m [parametres]
+Usage: freud [command] [file] [options]
 
-Supported commands:
+Compiles by default: `freud program.c -o program.bf` transpiles
+program.c. Without -o, output goes to stdout; without a file, input
+comes from stdin (`run` requires a file).
 
-	[1mcompile[0m [-c code-file] [-o output-file]
+Commands:
+  compile    Transpile C source to Brainfuck (the default command)
+  run        Run a Brainfuck program
+  format     Pretty-print Brainfuck (-m minifies)
+  help       Show this help
 
-		Compiles the specified C program to Brainfuck.
-
-		If no code file is specified, the standard
-		input is used.
-
-		If no output file is specified, the standard
-		output is used.
-
-	[1mformat[0m [-c code-file] [-o output-file] [-m]
-
-		Formats the specified Brainfuck program by removing all
-		invalid characters and adding indentation.
-
-		If no code file is specified, the standard
-		input is used.
-
-		If no output file is specified, the standard
-		output is used.
-
-		If the -m flag is specified, all whitespace is removed.
-
-	[1mrun[0m -c code-file [-i input-file] [-o output-file]
-
-		Executes the specified Brainfuck program.
-
-		If no input file is specified, the standard
-		input is used.
-
-		If no output file is specified, the standard
-		output is used.
-
+Options:
+  -c file    Code file (same as the positional file)
+  -o file    Output file (default stdout)
+  -i file    Input file for run (default stdin)
+  -m         Minify (format only)

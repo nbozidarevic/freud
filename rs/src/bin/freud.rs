@@ -1,10 +1,6 @@
-//! `freud`: unified CLI (compile/run/format), ported from retired C++ `main`.
-//!
-//! Dispatch, flag parsing, and all output bytes match the C++ binary;
-//! see `cli` for the shared layer and its documented warts.
+//! `freud`: transpile-first CLI (compile by default; run/format/help auxiliary).
 
 use freud_core::cli;
-use std::process::exit;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -12,29 +8,30 @@ fn main() {
         cli::print_header_and_usage();
         return;
     }
-    let command = args[0].clone();
     // Note: flags parse before dispatch, so `freud bogus -c` reports
-    // the missing value, not the unknown command — exactly like C++.
-    let params = match cli::parse_params(&command, &args[1..]) {
+    // the missing value (compile path), not an unknown command.
+    let (command, cmd_args) = match args[0].as_str() {
+        "compile" | "run" | "format" => (args[0].as_str(), &args[1..]),
+        "help" | "--help" | "-h" => {
+            cli::print_header_and_usage();
+            return;
+        }
+        "--version" => {
+            println!("freud {}", env!("CARGO_PKG_VERSION"));
+            return;
+        }
+        _ => ("compile", &args[..]),
+    };
+    let params = match cli::parse_params(command, cmd_args) {
         Ok(p) => p,
         Err(e) => cli::fail(e),
     };
-    if command == "compile" {
-        if let Err(e) = cli::cmd_compile(&params) {
-            cli::fail(&e);
-        }
-        return;
+    let result = match command {
+        "run" => cli::cmd_run(&params),
+        "format" => cli::cmd_format(&params),
+        _ => cli::cmd_compile(&params),
+    };
+    if let Err(e) = result {
+        cli::fail(&e);
     }
-    if command == "format" {
-        cli::cmd_format(&params);
-        return;
-    }
-    if command == "run" {
-        if let Err(e) = cli::cmd_run(&params) {
-            cli::fail(e);
-        }
-        return;
-    }
-    cli::print_unknown_command(&command);
-    exit(1);
 }
