@@ -46,6 +46,9 @@ Deliberate C++-vs-Rust deviations (documented, not mirrored):
    reading `NONE` past EOF). The Rust runner reports
    `Unbalanced Brainfuck code: unclosed '['` instead — a hang has no
    observable output to match.
+2. A missing/unopenable code file spins forever in C++ (`BrainfuckReader`
+   only breaks on `eof()`, which a failed-open stream never reports).
+   The Rust CLIs treat it as an empty program instead.
 
 ## Source language
 

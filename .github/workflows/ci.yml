@@ -288,8 +288,9 @@ jobs:
         run: |
           fail=0
           t() {
-            ec_cpp=0; eval "$2" > /tmp/c.cpp || ec_cpp=$?
-            ec_rs=0; eval "$3" > /tmp/c.rs || ec_rs=$?
+            echo "check: $1"
+            ec_cpp=0; timeout 60 bash -c "$2" > /tmp/c.cpp || ec_cpp=$?
+            ec_rs=0; timeout 60 bash -c "$3" > /tmp/c.rs || ec_rs=$?
             if [ "$ec_cpp" != "$ec_rs" ]; then echo "EXIT DIFFERS: $1 ($ec_cpp vs $ec_rs)"; fail=1; fi
             cmp -s /tmp/c.cpp /tmp/c.rs || { echo "CLI DIFFERS: $1"; fail=1; }
           }
@@ -301,15 +302,28 @@ jobs:
           t "format-o-missing" './bin/freud format -c tests/format/squares.in -o' './rs/target/release/bffmt -c tests/format/squares.in -o'
           t "run-unknown-flag" './bin/freud run -c tests/run/nested.bf -i tests/run/nested.in -z' './rs/target/release/bfrun -c tests/run/nested.bf -i tests/run/nested.in -z'
           t "format-i-ignored" './bin/freud format -c tests/format/squares.in -i whatever' './rs/target/release/bffmt -c tests/format/squares.in -i whatever'
-          t "run-missing-code" './bin/freud run -c /nonexistent-xyz' './rs/target/release/bfrun -c /nonexistent-xyz'
-          t "format-missing-code" './bin/freud format -c /nonexistent-xyz' './rs/target/release/bffmt -c /nonexistent-xyz'
           t "run-missing-input" './bin/freud run -c tests/run/eof.bf -i /nonexistent-xyz' './rs/target/release/bfrun -c tests/run/eof.bf -i /nonexistent-xyz'
-          ec_cpp=0; ./bin/freud run -c tests/run/nested.bf -i tests/run/nested.in -o /tmp/c.cpp.o || ec_cpp=$?
-          ec_rs=0; ./rs/target/release/bfrun -c tests/run/nested.bf -i tests/run/nested.in -o /tmp/c.rs.o || ec_rs=$?
+          t "run-bad-output" './bin/freud run -c tests/run/nested.bf -i tests/run/nested.in -o /nonexistent-dir-xyz/f' './rs/target/release/bfrun -c tests/run/nested.bf -i tests/run/nested.in -o /nonexistent-dir-xyz/f'
+          t "format-bad-output" './bin/freud format -c tests/format/squares.in -o /nonexistent-dir-xyz/f' './rs/target/release/bffmt -c tests/format/squares.in -o /nonexistent-dir-xyz/f'
+          ec_cpp=0; timeout 60 ./bin/freud run -c tests/run/nested.bf -i tests/run/nested.in -o /tmp/c.cpp.o || ec_cpp=$?
+          ec_rs=0; timeout 60 ./rs/target/release/bfrun -c tests/run/nested.bf -i tests/run/nested.in -o /tmp/c.rs.o || ec_rs=$?
           if [ "$ec_cpp" != "$ec_rs" ]; then echo "EXIT DIFFERS: run-to-file"; fail=1; fi
           cmp -s /tmp/c.cpp.o /tmp/c.rs.o || { echo "CLI DIFFERS: run-to-file"; fail=1; }
-          ec_cpp=0; ./bin/freud format -c tests/format/squares.in -o /tmp/c.cpp.of || ec_cpp=$?
-          ec_rs=0; ./rs/target/release/bffmt -c tests/format/squares.in -o /tmp/c.rs.of || ec_rs=$?
+          ec_cpp=0; timeout 60 ./bin/freud format -c tests/format/squares.in -o /tmp/c.cpp.of || ec_cpp=$?
+          ec_rs=0; timeout 60 ./rs/target/release/bffmt -c tests/format/squares.in -o /tmp/c.rs.of || ec_rs=$?
           if [ "$ec_cpp" != "$ec_rs" ]; then echo "EXIT DIFFERS: format-to-file"; fail=1; fi
           cmp -s /tmp/c.cpp.of /tmp/c.rs.of || { echo "CLI DIFFERS: format-to-file"; fail=1; }
+          # Known C++ quirk (see semantics.md): a missing code file spins
+          # forever, so no differential here — pin both sides instead.
+          printf '\n' > /tmp/nl
+          ec_cpp=0; timeout 10 ./bin/freud run -c /nonexistent-xyz > /tmp/c.cpp || ec_cpp=$?
+          if [ "$ec_cpp" != "124" ]; then echo "CPP QUIRK CHANGED: run-missing-code exit $ec_cpp"; fail=1; fi
+          ec_rs=0; timeout 60 ./rs/target/release/bfrun -c /nonexistent-xyz > /tmp/c.rs || ec_rs=$?
+          if [ "$ec_rs" != "0" ]; then echo "EXIT DIFFERS: bfrun-missing-code ($ec_rs)"; fail=1; fi
+          cmp -s /tmp/c.rs /dev/null || { echo "OUTPUT DIFFERS: bfrun-missing-code"; fail=1; }
+          ec_cpp=0; timeout 10 ./bin/freud format -c /nonexistent-xyz > /tmp/c.cpp || ec_cpp=$?
+          if [ "$ec_cpp" != "124" ]; then echo "CPP QUIRK CHANGED: format-missing-code exit $ec_cpp"; fail=1; fi
+          ec_rs=0; timeout 60 ./rs/target/release/bffmt -c /nonexistent-xyz > /tmp/c.rs || ec_rs=$?
+          if [ "$ec_rs" != "0" ]; then echo "EXIT DIFFERS: bffmt-missing-code ($ec_rs)"; fail=1; fi
+          cmp -s /tmp/c.rs /tmp/nl || { echo "OUTPUT DIFFERS: bffmt-missing-code"; fail=1; }
           exit $fail

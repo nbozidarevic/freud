@@ -6,8 +6,11 @@
 //! output), not hand-transcribed.
 //!
 //! Mirrored warts (revisit in the Phase 3 CLI reframe):
-//! - Unopenable code/input files behave as empty (C++ `ifstream` fails
-//!   silently); unopenable output behaves as a sink.
+//! - Unopenable input is empty and unopenable output is a sink (silent
+//!   C++ stream failures).
+//! - Unopenable code reads as empty. C++ instead spins forever here:
+//!   `BrainfuckReader` only breaks on `eof()`, which a failed-open
+//!   stream never reports. A hang is documented, not mirrored.
 
 use freud_core::runner;
 use std::fs::File;

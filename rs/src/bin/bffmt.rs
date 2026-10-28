@@ -6,8 +6,10 @@
 //! `bfrun.rs` (both generated from `tests/run/unbalanced_close.out`);
 //! the unified CLI (slice 5e) will deduplicate.
 //!
-//! Mirrored warts: unopenable code reads as empty, unopenable output is
-//! a sink (silent C++ stream failures).
+//! Mirrored warts: unopenable output is a sink (silent C++ stream
+//! failure). Unopenable code reads as empty; C++ instead spins forever
+//! (`BrainfuckReader` never sees EOF on a failed stream) — documented,
+//! not mirrored.
 
 use freud_core::format;
 use std::fs::File;
