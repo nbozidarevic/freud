@@ -1,0 +1,16 @@
+3:1 kw int
+3:5 ident main
+3:9 punct (
+3:10 punct )
+3:12 punct {
+4:3 ident printf
+4:9 punct (
+4:10 string %d
+4:14 punct ,
+4:16 int 40
+4:19 punct +
+4:21 int 50
+4:23 punct )
+4:24 punct ;
+5:1 punct }
+6:1 end

@@ -1,0 +1,12 @@
+3:1 kw int
+3:5 ident main
+3:9 punct (
+3:10 punct )
+3:12 punct {
+4:3 ident printf
+4:9 punct (
+4:10 string Hello, World!\n
+4:27 punct )
+4:28 punct ;
+5:1 punct }
+7:1 end

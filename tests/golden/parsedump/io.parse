@@ -1,0 +1,1 @@
+(tu (funcdef main (compound (decl int (initdecl a (int 0))) (decl char (initdecl c (int 0))) (exprstmt (call (ident scanf) (string %d %c) (unary & (ident a)) (unary & (ident c)))) (exprstmt (call (ident printf) (string %d %c\n) (ident a) (ident c))) (exprstmt (call (ident printf) (string %c) (char 'X'))) (exprstmt (call (ident printf) (string %c\n) (char '!'))))))

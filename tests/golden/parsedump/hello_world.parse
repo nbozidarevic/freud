@@ -1,0 +1,1 @@
+(tu (funcdef main (compound (exprstmt (call (ident printf) (string Hello, World!\n))))))
