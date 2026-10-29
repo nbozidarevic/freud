@@ -59,6 +59,10 @@ pub enum Stmt {
         cond: Expr,
         body: Box<Stmt>,
     },
+    DoWhile {
+        body: Box<Stmt>,
+        cond: Expr,
+    },
     For {
         init: ForInit,
         cond: Option<Expr>,
@@ -234,6 +238,14 @@ fn dump_stmt(s: &Stmt, out: &mut Vec<u8>) {
             dump_expr(cond, out);
             out.push(b' ');
             dump_stmt(body, out);
+            close(out);
+        }
+        Stmt::DoWhile { body, cond } => {
+            open(out, "dowhile");
+            out.push(b' ');
+            dump_stmt(body, out);
+            out.push(b' ');
+            dump_expr(cond, out);
             close(out);
         }
         Stmt::For {

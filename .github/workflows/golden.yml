@@ -1,0 +1,32 @@
+name: golden-snapshot
+
+# TEMPORARY (Phase 6a): snapshot golden outputs for the new dowhile
+# corpus file. Removed once goldens are committed; regenerate via
+# tests/golden/generate.sh afterwards.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release --manifest-path rs/Cargo.toml
+
+      - name: Generate goldens
+        run: ./tests/golden/generate.sh
+
+      - name: Upload goldens
+        uses: actions/upload-artifact@v4
+        with:
+          name: goldens
+          path: tests/golden
+          if-no-files-found: error

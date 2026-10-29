@@ -131,6 +131,17 @@ impl Emitter {
                 self.break_stack.pop();
                 r
             }
+            Stmt::DoWhile { body, cond } => {
+                // Same loop/break discipline as `while`: `break` inside
+                // loops errors, `continue` errors (see Stmt::Break).
+                self.break_stack.push(-1);
+                let r = self.perform_do_while(
+                    |em| em.compile_expr(cond),
+                    |em| em.compile_stmt(body),
+                );
+                self.break_stack.pop();
+                r
+            }
             Stmt::For { init, cond, incr, body } => {
                 self.break_stack.push(-1);
                 let r = self.perform_for(

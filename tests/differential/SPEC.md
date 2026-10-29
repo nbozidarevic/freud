@@ -25,6 +25,10 @@ the Rust core; it remains the parser contract, pinned by goldens.
 
 ## Node shapes (frozen at C++ retirement)
 
+Phase 6 addition: `dowhile` — `(dowhile body cond)`, body first in
+source order, e.g.
+`(dowhile (compound ...) (binop < (ident i) (int 3)))`.
+
 - `tu`: top-level `decl`/`funcdef` nodes in order (stray `;` skipped).
 - `funcdef(name)`: `[compound body]`. Parameters and return type are
   consumed, not kept.

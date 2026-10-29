@@ -406,6 +406,17 @@ impl Emitter {
         Ok(())
     }
 
+    /// Do...while loop: the body runs once unconditionally, then like
+    /// `perform_while` (Phase 6: completes the thesis iteration set).
+    pub fn perform_do_while(
+        &mut self,
+        cond: impl FnMut(&mut Self) -> Result<i32, CompileError>,
+        mut body: impl FnMut(&mut Self) -> Result<(), CompileError>,
+    ) -> Result<(), CompileError> {
+        body(self)?;
+        self.perform_while(cond, body)
+    }
+
     /// For loop over init/cond/update/body (`performFor`).
     pub fn perform_for(
         &mut self,

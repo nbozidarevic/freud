@@ -263,7 +263,7 @@ impl<'a> Parser<'a> {
         if self.at_kw(b"if") || self.at_kw(b"switch") {
             return self.parse_selection();
         }
-        if self.at_kw(b"while") || self.at_kw(b"for") {
+        if self.at_kw(b"while") || self.at_kw(b"do") || self.at_kw(b"for") {
             return self.parse_iteration();
         }
         if self.at_kw(b"break") || self.at_kw(b"continue") || self.at_kw(b"return") {
@@ -339,6 +339,19 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_iteration(&mut self) -> Result<Stmt, ParseError> {
+        if self.at_kw(b"do") {
+            self.next_tok();
+            let b = self.parse_statement()?;
+            self.expect_kw(b"while", "'while'")?;
+            self.expect_punct(b"(", "'('")?;
+            let c = self.parse_expression()?;
+            self.expect_punct(b")", "')'")?;
+            self.expect_punct(b";", "';'")?;
+            return Ok(Stmt::DoWhile {
+                body: Box::new(b),
+                cond: c,
+            });
+        }
         if self.at_kw(b"while") {
             self.next_tok();
             self.expect_punct(b"(", "'('")?;
@@ -728,6 +741,24 @@ mod tests {
         assert_sexp(
             "int f() { while (i) i = i + 1; }",
             "(tu (funcdef f (compound (while (ident i) (exprstmt (assign = (ident i) (binop + (ident i) (int 1))))))))",
+        );
+    }
+
+    #[test]
+    fn do_while_loop() {
+        assert_sexp(
+            "int f() { do i = i + 1; while (i < 3); }",
+            "(tu (funcdef f (compound (dowhile (exprstmt (assign = (ident i) (binop + (ident i) (int 1)))) (binop < (ident i) (int 3))))))",
+        );
+    }
+
+    #[test]
+    fn do_while_requires_semicolon() {
+        assert_err(
+            "int f() { do { } while (1) }",
+            1,
+            28,
+            "expected ';', found '}'",
         );
     }
 
