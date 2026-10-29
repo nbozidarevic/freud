@@ -102,6 +102,32 @@ impl Emitter {
         Ok(())
     }
 
+    /// Allocate the `broken` flag for a loop whose body may break, and
+    /// push it (or the `-1` sentinel when the body cannot break, keeping
+    /// the old error for any missed case). Returns the flag cell, if any.
+    fn loop_break_flag(&mut self, body: &Stmt) -> Result<Option<i32>, CompileError> {
+        if stmt_may_break(body) {
+            let broken = self.const_value(0)?;
+            self.break_stack.push(broken);
+            Ok(Some(broken))
+        } else {
+            self.break_stack.push(-1);
+            Ok(None)
+        }
+    }
+
+    /// Condition `c` additionally gated on the `broken` flag being clear
+    /// (identity when the loop has no flag).
+    fn and_not_broken(&mut self, c: i32, broken: Option<i32>) -> Result<i32, CompileError> {
+        match broken {
+            Some(b) => {
+                let nb = self.negate(b)?;
+                self.logical_and(c, nb)
+            }
+            None => Ok(c),
+        }
+    }
+
     fn compile_stmt(&mut self, s: &Stmt) -> Result<(), CompileError> {
         match s {
             Stmt::Compound(b) => self.compile_block(b),
@@ -123,36 +149,58 @@ impl Emitter {
             }
             Stmt::Switch { expr, body } => self.compile_switch(expr, body),
             Stmt::While { cond, body } => {
-                self.break_stack.push(-1);
+                let broken = self.loop_break_flag(body)?;
                 let r = self.perform_while(
-                    |em| em.compile_expr(cond),
+                    |em| {
+                        let c = em.compile_expr(cond)?;
+                        em.and_not_broken(c, broken)
+                    },
                     |em| em.compile_stmt(body),
                 );
                 self.break_stack.pop();
                 r
             }
             Stmt::DoWhile { body, cond } => {
-                // Same loop/break discipline as `while`: `break` inside
-                // loops errors, `continue` errors (see Stmt::Break).
-                self.break_stack.push(-1);
+                let broken = self.loop_break_flag(body)?;
                 let r = self.perform_do_while(
-                    |em| em.compile_expr(cond),
+                    |em| {
+                        let c = em.compile_expr(cond)?;
+                        em.and_not_broken(c, broken)
+                    },
                     |em| em.compile_stmt(body),
                 );
                 self.break_stack.pop();
                 r
             }
             Stmt::For { init, cond, incr, body } => {
-                self.break_stack.push(-1);
+                let broken = self.loop_break_flag(body)?;
                 let r = self.perform_for(
                     |em| em.compile_for_init(init),
-                    |em| match cond {
-                        Some(e) => em.compile_expr(e),
-                        None => Ok(em.const_value(1)),
+                    |em| {
+                        let c = match cond {
+                            Some(e) => em.compile_expr(e),
+                            None => Ok(em.const_value(1)),
+                        }?;
+                        em.and_not_broken(c, broken)
                     },
-                    |em| match incr {
-                        Some(e) => em.compile_expr(e).map(|_| ()),
-                        None => Ok(()),
+                    |em| {
+                        // `break` skips the update: run it only if not broken.
+                        if let Some(b) = broken {
+                            let nb = em.negate(b)?;
+                            em.perform_if_else(
+                                nb,
+                                |em| match incr {
+                                    Some(e) => em.compile_expr(e).map(|_| ()),
+                                    None => Ok(()),
+                                },
+                                |_| Ok(()),
+                            )
+                        } else {
+                            match incr {
+                                Some(e) => em.compile_expr(e).map(|_| ()),
+                                None => Ok(()),
+                            }
+                        }
                     },
                     |em| em.compile_stmt(body),
                 );
@@ -517,6 +565,28 @@ impl Emitter {
         // Calls yield no usable value (the C++ returns null Any); statements
         // drop it. Zero is a dummy for the unreachable use-as-value spot.
         Ok(0)
+    }
+}
+
+/// Whether `s` may execute a `break` bound to the *innermost enclosing*
+/// loop or switch. Breaks inside nested loops or switches bind to those
+/// constructs and do not count; anything else (blocks, `if`, labels)
+/// is transparent.
+fn stmt_may_break(s: &Stmt) -> bool {
+    match s {
+        Stmt::Break => true,
+        Stmt::Block(stmts) => stmts.iter().any(stmt_may_break),
+        Stmt::If { then, els, .. } => {
+            stmt_may_break(then) || els.as_ref().is_some_and(|e| stmt_may_break(e))
+        }
+        Stmt::Case { body, .. } | Stmt::Default { body } | Stmt::GotoLabel { body, .. } => {
+            stmt_may_break(body)
+        }
+        Stmt::While { .. }
+        | Stmt::DoWhile { .. }
+        | Stmt::For { .. }
+        | Stmt::Switch { .. } => false,
+        _ => false,
     }
 }
 
