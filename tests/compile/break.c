@@ -57,4 +57,10 @@ int main() {
     n = n + 1;
   }
   printf("%d\n", n);
+  int t = 0;
+  switch (1) {
+    case 1: t = t + 5; break; t = t + 100;
+    default: t = t + 1000; break;
+  }
+  printf("%d\n", t);
 }

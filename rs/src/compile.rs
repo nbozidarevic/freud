@@ -93,13 +93,55 @@ impl Emitter {
     }
 
     fn compile_block(&mut self, b: &Block) -> Result<(), CompileError> {
+        // Once a sibling may have executed `break`, the rest of the block
+        // must be skipped at runtime (a bare flag checked only by the
+        // loop condition would let them run once more).
+        let mut after_break = false;
         for item in &b.0 {
             match item {
-                BlockItem::Decl(d) => self.compile_decl(d)?,
-                BlockItem::Stmt(s) => self.compile_stmt(s)?,
+                BlockItem::Decl(d) => {
+                    if after_break {
+                        self.compile_decl_guarded(d)?
+                    } else {
+                        self.compile_decl(d)?
+                    }
+                }
+                BlockItem::Stmt(s) => {
+                    if after_break {
+                        self.compile_stmt_guarded(s)?
+                    } else {
+                        self.compile_stmt(s)?
+                    }
+                    if stmt_may_break(s) {
+                        after_break = true;
+                    }
+                }
             }
         }
         Ok(())
+    }
+
+    /// Compile `s`, skipping it at runtime if the innermost break flag is
+    /// set (statements after a potential `break` in the same block).
+    fn compile_stmt_guarded(&mut self, s: &Stmt) -> Result<(), CompileError> {
+        if let Some(&flag) = self.break_stack.last() {
+            if flag >= 0 {
+                let nb = self.negate(flag)?;
+                return self.perform_if_else(nb, |em| em.compile_stmt(s), |_| Ok(()));
+            }
+        }
+        self.compile_stmt(s)
+    }
+
+    /// Like `compile_stmt_guarded` for declarations.
+    fn compile_decl_guarded(&mut self, d: &Decl) -> Result<(), CompileError> {
+        if let Some(&flag) = self.break_stack.last() {
+            if flag >= 0 {
+                let nb = self.negate(flag)?;
+                return self.perform_if_else(nb, |em| em.compile_decl(d), |_| Ok(()));
+            }
+        }
+        self.compile_decl(d)
     }
 
     /// Allocate the `broken` flag for a loop whose body may break, and
@@ -299,10 +341,28 @@ impl Emitter {
                 run_cond,
                 |em| {
                     em.set_value(fall, 1);
+                    // Same sibling rule as blocks: statements after a
+                    // potential `break` in this case are flag-guarded.
+                    let mut after_break = false;
                     for item in &c.body {
                         match item {
-                            SwitchBodyItem::Decl(d) => em.compile_decl(d)?,
-                            SwitchBodyItem::Stmt(s) => em.compile_stmt(s)?,
+                            SwitchBodyItem::Decl(d) => {
+                                if after_break {
+                                    em.compile_decl_guarded(d)?
+                                } else {
+                                    em.compile_decl(d)?
+                                }
+                            }
+                            SwitchBodyItem::Stmt(s) => {
+                                if after_break {
+                                    em.compile_stmt_guarded(s)?
+                                } else {
+                                    em.compile_stmt(s)?
+                                }
+                                if stmt_may_break(s) {
+                                    after_break = true;
+                                }
+                            }
                         }
                     }
                     Ok(())
