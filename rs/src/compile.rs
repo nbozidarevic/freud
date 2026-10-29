@@ -107,7 +107,7 @@ impl Emitter {
     /// the old error for any missed case). Returns the flag cell, if any.
     fn loop_break_flag(&mut self, body: &Stmt) -> Result<Option<i32>, CompileError> {
         if stmt_may_break(body) {
-            let broken = self.const_value(0)?;
+            let broken = self.const_value(0);
             self.break_stack.push(broken);
             Ok(Some(broken))
         } else {
@@ -575,7 +575,10 @@ impl Emitter {
 fn stmt_may_break(s: &Stmt) -> bool {
     match s {
         Stmt::Break => true,
-        Stmt::Block(stmts) => stmts.iter().any(stmt_may_break),
+        Stmt::Compound(b) => b.0.iter().any(|it| match it {
+            BlockItem::Stmt(s) => stmt_may_break(s),
+            BlockItem::Decl(_) => false,
+        }),
         Stmt::If { then, els, .. } => {
             stmt_may_break(then) || els.as_ref().is_some_and(|e| stmt_may_break(e))
         }
