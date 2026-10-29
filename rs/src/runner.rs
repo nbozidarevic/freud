@@ -6,15 +6,21 @@
 //! - `,` reads one byte and leaves the cell unchanged on EOF (pinned).
 //! - Non-command bytes are ignored, exactly like `BrainfuckReader`.
 //! - Unbalanced brackets report the C++ messages verbatim.
-//! - `]` pops its `[` even when jumping back (the re-executed `[`
-//!   re-pushes); the loop stack is therefore balanced on clean exit.
+//! - A precomputed jump table makes `[` skips and `]` jumps O(1); a
+//!   depth counter (incremented on `[`, decremented on `]`, including
+//!   re-executions) replaces the loop stack, with identical error
+//!   behavior: unmatched `]` errors at runtime in execution order, so
+//!   partial output precedes the error exactly as before.
+//! - Input/output are buffered (`BufReader`/`BufWriter`): `,`/`.` cost
+//!   one buffer touch, not one syscall, per byte. Byte order and EOF
+//!   semantics are unchanged, and output is flushed before returning.
 //!
 //! Deliberate deviation: C++ spins forever when a zero-cell `[` has no
 //! matching `]` (it keeps reading `NONE` past EOF). This port reports
 //! `unclosed '['` instead — a hang has no observable output to match,
 //! so no differential can distinguish them except by timeout.
 
-use std::io::{Read, Write};
+use std::io::{BufReader, BufWriter, Read, Write};
 
 /// `]` with no matching `[` (`BrainfuckRunner` message, verbatim).
 pub const ERR_UNEXPECTED_CLOSE: &str = "Unbalanced Brainfuck code: unexpected ']'";
@@ -55,11 +61,31 @@ pub fn run<R: Read, W: Write>(
         .copied()
         .filter(|b| matches!(b, b'<' | b'>' | b'+' | b'-' | b',' | b'.' | b'[' | b']'))
         .collect();
+    // Jump table: matching bracket for each `[`/`]`, `usize::MAX` when
+    // unmatched. Built without failing: unmatched brackets error at
+    // runtime, in execution order.
+    let mut jumps = vec![usize::MAX; cmds.len()];
+    let mut open: Vec<usize> = Vec::new();
+    for (i, &c) in cmds.iter().enumerate() {
+        match c {
+            b'[' => open.push(i),
+            b']' => {
+                if let Some(o) = open.pop() {
+                    jumps[o] = i;
+                    jumps[i] = o;
+                }
+            }
+            _ => {}
+        }
+    }
+    let mut input = BufReader::with_capacity(8192, input);
+    let mut output = BufWriter::new(output);
     let mut tape = vec![0u8; TAPE_INIT];
     let mut origin: i64 = ORIGIN_INIT;
     let mut pointer: i64 = 0;
-    let mut stack: Vec<usize> = Vec::new();
+    let mut depth: usize = 0;
     let mut pc: usize = 0;
+    let mut result = Ok(());
     while pc < cmds.len() {
         match cmds[pc] {
             b'<' => {
@@ -98,45 +124,40 @@ pub fn run<R: Read, W: Write>(
             b'[' => {
                 let i = cell_index(&mut tape, &mut origin, pointer);
                 if tape[i] == 0 {
-                    let mut depth = 1;
-                    while depth > 0 {
-                        pc += 1;
-                        if pc >= cmds.len() {
-                            // C++ spins here; report instead (see above).
-                            return Err(ERR_UNCLOSED_OPEN);
-                        }
-                        match cmds[pc] {
-                            b'[' => depth += 1,
-                            b']' => depth -= 1,
-                            _ => {}
-                        }
+                    let target = jumps[pc];
+                    if target == usize::MAX {
+                        // C++ spins here; report instead (see above).
+                        result = Err(ERR_UNCLOSED_OPEN);
+                        break;
                     }
-                    pc += 1;
+                    pc = target + 1;
                 } else {
-                    stack.push(pc);
+                    depth += 1;
                     pc += 1;
                 }
             }
             b']' => {
-                if stack.is_empty() {
-                    return Err(ERR_UNEXPECTED_CLOSE);
+                let target = jumps[pc];
+                if target == usize::MAX {
+                    result = Err(ERR_UNEXPECTED_CLOSE);
+                    break;
                 }
+                depth -= 1;
                 let i = cell_index(&mut tape, &mut origin, pointer);
                 if tape[i] != 0 {
-                    pc = stack.pop().unwrap();
+                    pc = target;
                 } else {
-                    stack.pop();
                     pc += 1;
                 }
             }
             _ => pc += 1, // unreachable: filtered above
         }
     }
-    if stack.is_empty() {
-        Ok(())
-    } else {
-        Err(ERR_UNCLOSED_OPEN)
+    if result.is_ok() && depth != 0 {
+        result = Err(ERR_UNCLOSED_OPEN);
     }
+    let _ = output.flush();
+    result
 }
 
 #[cfg(test)]
@@ -226,5 +247,25 @@ mod tests {
     fn unclosed_zero_skip_reports() {
         // C++ spins forever here; the port reports instead.
         assert_eq!(run_str("[>>", b"").unwrap_err(), ERR_UNCLOSED_OPEN);
+    }
+
+    #[test]
+    fn loop_reentry_balances_depth() {
+        // 3 iterations through `]` jumps and re-executed `[`s.
+        assert_eq!(run_str("+++[>+++<-]>.", b"").unwrap(), vec![9]);
+    }
+
+    #[test]
+    fn zero_skip_jumps_nested() {
+        assert_eq!(run_str("[[[]]]+.", b"").unwrap(), vec![1]);
+    }
+
+    #[test]
+    fn partial_output_precedes_close_error() {
+        // The jump table must not reject the stray `]` before running.
+        let mut out = Vec::new();
+        let err = run(b"+.]", &mut Cursor::new(b""), &mut out).unwrap_err();
+        assert_eq!(err, ERR_UNEXPECTED_CLOSE);
+        assert_eq!(out, vec![1]);
     }
 }
