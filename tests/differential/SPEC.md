@@ -48,10 +48,14 @@ source order, e.g.
 - `assign(op)`: `[lhs, rhs]`, right-associative; `op` is one of
   `= += -= *= /= %=`. Non-lvalue `lhs` (other than parenthesized
   lvalues) is a parse error.
+- `ternary`: `[cond, then, else]`, right-associative; sits between
+  assignment and `||` — the condition is a logical-or expression, the
+  middle is a full expression (commas allowed), and the else-branch is
+  a conditional.
 - `binop(op)`: `[l, r]`, left-associative. Levels low→high:
   `||`, `&&`, `== !=`, `< > <= >=`, `+ -`, `* / %`.
 - `unary(op)`: `[e]`; `op` is one of `! & ++ --` (no unary minus/plus,
-  no `~`, no casts, no `sizeof`, no ternary — accepted subset surface).
+  no `~`, no casts, no `sizeof` — accepted subset surface).
 - `postfix(op)`: `[e]` (`++`/`--`); `call`: `[callee, args...]`
   (callee is any postfix expression).
 - `paren`: `[e]` — parentheses are kept as nodes, not transparent.

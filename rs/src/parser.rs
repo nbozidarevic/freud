@@ -481,7 +481,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_assignment(&mut self) -> Result<Expr, ParseError> {
-        let lhs = self.parse_logical_or()?;
+        let lhs = self.parse_conditional()?;
         let t = self.peek().clone();
         if t.kind == Kind::Punct && is_op_in(&t.text, &ASSIGN_OPS) {
             self.next_tok();
@@ -496,6 +496,25 @@ impl<'a> Parser<'a> {
             });
         }
         Ok(lhs)
+    }
+
+    /// Conditional (`?:`): between assignment and `||`, right-associative.
+    /// The middle operand is a full expression (commas allowed); the
+    /// else-branch is a conditional.
+    fn parse_conditional(&mut self) -> Result<Expr, ParseError> {
+        let cond = self.parse_logical_or()?;
+        if !self.at_punct(b"?") {
+            return Ok(cond);
+        }
+        self.next_tok();
+        let then = self.parse_expression()?;
+        self.expect_punct(b":", "':'")?;
+        let els = self.parse_conditional()?;
+        Ok(Expr::Ternary {
+            cond: Box::new(cond),
+            then: Box::new(then),
+            els: Box::new(els),
+        })
     }
 
     fn parse_logical_or(&mut self) -> Result<Expr, ParseError> {
@@ -840,6 +859,43 @@ mod tests {
             "int f() { x = a || b && !c; }",
             "(tu (funcdef f (compound (exprstmt (assign = (ident x) (binop || (ident a) (binop && (ident b) (unary ! (ident c)))))))))",
         );
+    }
+
+    #[test]
+    fn ternary_basic() {
+        assert_sexp(
+            "int f() { x = a ? b : c; }",
+            "(tu (funcdef f (compound (exprstmt (assign = (ident x) (ternary (ident a) (ident b) (ident c)))))))",
+        );
+    }
+
+    #[test]
+    fn ternary_right_associative() {
+        assert_sexp(
+            "int f() { x = a ? b : c ? d : e; }",
+            "(tu (funcdef f (compound (exprstmt (assign = (ident x) (ternary (ident a) (ident b) (ternary (ident c) (ident d) (ident e))))))))",
+        );
+    }
+
+    #[test]
+    fn ternary_condition_is_logical_or() {
+        assert_sexp(
+            "int f() { x = a || b ? c : d; }",
+            "(tu (funcdef f (compound (exprstmt (assign = (ident x) (ternary (binop || (ident a) (ident b)) (ident c) (ident d)))))))",
+        );
+    }
+
+    #[test]
+    fn ternary_middle_allows_comma() {
+        assert_sexp(
+            "int f() { x = a ? b, c : d; }",
+            "(tu (funcdef f (compound (exprstmt (assign = (ident x) (ternary (ident a) (comma (ident b) (ident c)) (ident d)))))))",
+        );
+    }
+
+    #[test]
+    fn error_ternary_missing_colon() {
+        assert_err("int f() { x = a ? b; }", 1, 20, "expected ':', found ';'");
     }
 
     #[test]

@@ -458,6 +458,26 @@ impl Emitter {
                     Ok(self.copy_value(res, target))
                 }
             }
+            Expr::Ternary { cond, then, els } => {
+                // Condition once; exactly one branch runs, writing the
+                // result cell (mirrors the `if`/`else` statement shape).
+                let c = self.compile_expr(cond)?;
+                let result = self.const_value(0);
+                self.perform_if_else(
+                    c,
+                    |em| {
+                        let t = em.compile_expr(then)?;
+                        em.copy_value(t, result);
+                        Ok(())
+                    },
+                    |em| {
+                        let e = em.compile_expr(els)?;
+                        em.copy_value(e, result);
+                        Ok(())
+                    },
+                )?;
+                Ok(result)
+            }
             Expr::BinOp { op, l, r } => {
                 // GCC evaluates arithmetic operands left-to-right but every
                 // other binary operator right-to-left (measured per site:

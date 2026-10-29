@@ -107,6 +107,11 @@ pub enum Expr {
         lhs: Box<Expr>,
         rhs: Box<Expr>,
     },
+    Ternary {
+        cond: Box<Expr>,
+        then: Box<Expr>,
+        els: Box<Expr>,
+    },
     BinOp {
         op: Vec<u8>,
         l: Box<Expr>,
@@ -348,6 +353,16 @@ fn dump_expr(e: &Expr, out: &mut Vec<u8>) {
             dump_expr(lhs, out);
             out.push(b' ');
             dump_expr(rhs, out);
+            close(out);
+        }
+        Expr::Ternary { cond, then, els } => {
+            open(out, "ternary");
+            out.push(b' ');
+            dump_expr(cond, out);
+            out.push(b' ');
+            dump_expr(then, out);
+            out.push(b' ');
+            dump_expr(els, out);
             close(out);
         }
         Expr::BinOp { op, l, r } => {
