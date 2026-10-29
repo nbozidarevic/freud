@@ -1,0 +1,32 @@
+name: perf-snapshot
+
+# TEMPORARY (Phase 5a): snapshot perf results into docs/perf.md.
+# Removed once the baseline is committed; regenerate via
+# `freud-bench --write docs/perf.md` afterwards.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release --manifest-path rs/Cargo.toml
+
+      - name: Generate perf results
+        run: ./rs/target/release/freud-bench --write docs/perf.md
+
+      - name: Upload perf doc
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-doc
+          path: docs/perf.md
+          if-no-files-found: error

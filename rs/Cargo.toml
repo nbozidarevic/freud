@@ -22,3 +22,7 @@ path = "src/bin/bfcompile.rs"
 [[bin]]
 name = "freud"
 path = "src/bin/freud.rs"
+
+[[bin]]
+name = "freud-bench"
+path = "src/bin/freud-bench.rs"

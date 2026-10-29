@@ -254,3 +254,18 @@ jobs:
           timeout 60 $F format tests/format/squares.in > /tmp/c.rs || { echo "FAILED: format-positional"; fail=1; }
           cmp -s /tmp/c.rs tests/format/squares.out || { echo "DIFFERS: format-positional"; fail=1; }
           exit $fail
+
+  perf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release --manifest-path rs/Cargo.toml
+
+      - name: Run harness
+        run: ./rs/target/release/freud-bench
