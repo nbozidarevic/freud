@@ -1,11 +1,9 @@
 name: perf-snapshot
 
-# TEMPORARY (Phase 5a): snapshot perf results into docs/perf.md.
-# Removed once the baseline is committed; regenerate via
-# `freud-bench --write docs/perf.md` afterwards.
+# Regeneration path for docs/perf.md (see its freshness mandate):
+# run from the Actions tab, download the artifact, commit it.
+# Dispatch-only: the per-push `perf` job in ci.yml covers the harness.
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 jobs:

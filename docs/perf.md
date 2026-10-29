@@ -57,8 +57,9 @@ Runner microbenchmarks:
 Refresh this file after any change to the runner, the code emitter,
 or the harness itself: regenerate with
 `./rs/target/release/freud-bench --write docs/perf.md` and commit the
-result. Perf-affecting changes without a refreshed results section
-are incomplete.
+result (or run the `perf-snapshot` workflow from the Actions tab and
+commit its artifact). Perf-affecting changes without a refreshed
+results section are incomplete.
 
 ## Optimization log
 
@@ -71,3 +72,10 @@ are incomplete.
   79.4 -> 46.6 ms, mul 65.4 -> 38.4 ms), consistent with cheaper hot
   loops. Buffered I/O shows no change in-process (the harness uses
   in-memory input); its win is at real pipes/files.
+- Peephole post-pass measured and rejected: across all golden
+  outputs, zero occurrences of `<>`, `><`, `+-`, `-+`, `[]`, and
+  doubled clears — the emitter already tracks the pointer exactly,
+  so a cancellation pass would change nothing. The remaining
+  structural lever is loop-based constant construction (`[-]` plus
+  up to 255 `+`s occurs 12,816 times); it needs a scratch cell and
+  would churn every golden, so it is deferred to future codegen work.
