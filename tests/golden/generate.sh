@@ -27,6 +27,9 @@ for f in format/*.in; do
   n=${f%.in}; n=${n#format/}
   "$FREUD" format -c "$f" -m > "golden/format-min/$n.out"
 done
+# Error-path run goldens live with the fixtures (combined stdout+stderr).
+"$FREUD" run -c run/unbalanced_close.bf -i run/unbalanced_close.in > run/unbalanced_close.out 2>&1 || true
+"$FREUD" run -c run/unbalanced_open.bf -i run/unbalanced_open.in > run/unbalanced_open.out 2>&1 || true
 # Errors go to stderr; goldens capture stdout+stderr combined.
 "$FREUD" > golden/cli/no-args.out 2>&1
 "$FREUD" help > golden/cli/help.out 2>&1

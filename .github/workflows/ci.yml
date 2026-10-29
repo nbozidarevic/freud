@@ -172,7 +172,7 @@ jobs:
           fail=0
           for f in tests/run/*.bf; do
             base="${f%.bf}"
-            ec_rs=0; timeout 60 ./rs/target/release/freud run -c "$f" -i "$base.in" > /tmp/r.rs || ec_rs=$?
+            ec_rs=0; timeout 60 ./rs/target/release/freud run -c "$f" -i "$base.in" > /tmp/r.rs 2>&1 || ec_rs=$?
             exp=0; case "$base" in *unbalanced*) exp=1;; esac
             if [ "$ec_rs" != "$exp" ]; then echo "EXIT DIFFERS: $f ($ec_rs vs $exp)"; fail=1; fi
             cmp -s /tmp/r.rs "$base.out" || { echo "DIFFERS: $f"; fail=1; }
