@@ -1,8 +1,9 @@
 # Roadmap
 
 Evolve the C-to-Brainfuck transpiler into a tested, documented, portable
-toolchain. Current position: Phase 3 complete — CLI/docs reframed
-transpile-first; next is Phase 5 (performance harness).
+toolchain. Current position: Phase 5 complete — perf harness,
+published baseline, runner optimized; next is Phase 6 (language
+expansion).
 
 Phase order is deliberate: harden, then decide the stack, then modernize
 the build (no point polishing a build the stack decision might replace),
@@ -20,7 +21,8 @@ then optimize, extend, and distribute.
       formatter, unified CLI) + golden CI; C++ retired.
 - [x] Phase 3 — Reframe CLI/docs to transpile-first (compile is the
       default command; `run`/`format` auxiliary; errors on stderr).
-- [ ] Phase 5 — Performance: harness, published results, optimizations.
+- [x] Phase 5 — Performance: harness, published results, runner
+      optimization; peephole rejected by measurement.
 - [ ] Phase 6 — Language expansion (thesis order).
 - [ ] Phase 7 — Native-first distribution adapters; web adapter gated.
 - [ ] Phase 8 — Rename, final docs, changelog, tag.
