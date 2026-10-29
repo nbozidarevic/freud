@@ -25,31 +25,31 @@ In-process timing on linux-x86_64 (`freud-bench`, adaptive iterations: at least 
 
 | program | BF bytes | compile mean (ms) | run mean (ms) | run min (ms) | iters | out bytes |
 |---|---|---|---|---|---|---|
-| addition | 47167 | 0.031 | 5.546 | 5.366 | 100 | 2 |
-| addsub | 436224 | 0.630 | 81.145 | 79.384 | 25 | 28 |
-| assign | 1751145 | 2.326 | 6.635 | 6.364 | 100 | 32 |
-| branch | 11037 | 0.027 | 0.103 | 0.089 | 100 | 10 |
-| cmp | 791215 | 0.505 | 2.263 | 1.854 | 100 | 32 |
-| complex | 360661 | 0.235 | 23.418 | 21.151 | 86 | 210 |
-| div | 506880 | 0.330 | 2.112 | 1.839 | 100 | 18 |
-| fordecl | 258562 | 0.177 | 2.320 | 2.229 | 100 | 10 |
-| hello_world | 1209 | 0.003 | 0.005 | 0.004 | 100 | 14 |
-| io | 119058 | 0.081 | 6.225 | 6.184 | 100 | 8 |
-| logic | 680296 | 0.441 | 1.744 | 1.543 | 100 | 28 |
-| loop | 207264 | 0.143 | 2.005 | 1.951 | 100 | 8 |
-| mod | 539862 | 0.346 | 2.216 | 1.873 | 100 | 18 |
-| mul | 387704 | 0.262 | 67.198 | 65.445 | 30 | 24 |
-| switch | 97941 | 0.101 | 0.556 | 0.524 | 100 | 21 |
+| addition | 47167 | 0.067 | 5.170 | 4.238 | 100 | 2 |
+| addsub | 436224 | 1.124 | 59.318 | 46.566 | 34 | 28 |
+| assign | 1751145 | 3.946 | 13.978 | 13.769 | 100 | 32 |
+| branch | 11037 | 0.042 | 0.134 | 0.129 | 100 | 10 |
+| cmp | 791215 | 1.165 | 3.019 | 2.685 | 100 | 32 |
+| complex | 360661 | 0.542 | 36.212 | 36.121 | 56 | 210 |
+| div | 506880 | 0.769 | 2.234 | 2.052 | 100 | 18 |
+| fordecl | 258562 | 0.396 | 3.577 | 3.269 | 100 | 10 |
+| hello_world | 1209 | 0.005 | 0.008 | 0.008 | 100 | 14 |
+| io | 119058 | 0.211 | 8.783 | 8.689 | 100 | 8 |
+| logic | 680296 | 0.965 | 2.217 | 2.098 | 100 | 28 |
+| loop | 207264 | 0.309 | 3.054 | 3.003 | 100 | 8 |
+| mod | 539862 | 0.773 | 2.318 | 2.180 | 100 | 18 |
+| mul | 387704 | 0.550 | 48.953 | 38.437 | 41 | 24 |
+| switch | 97941 | 0.184 | 0.740 | 0.719 | 100 | 21 |
 
 Runner microbenchmarks:
 
 | name | BF bytes | run mean (ms) | run min (ms) | iters | out bytes |
 |---|---|---|---|---|---|
-| nested-loops | 43 | 0.005 | 0.005 | 100 | 1 |
-| tape-walk | 200002 | 0.293 | 0.274 | 100 | 1 |
-| cell-bump | 100001 | 0.311 | 0.307 | 100 | 1 |
-| skip-scan | 100002 | 0.147 | 0.144 | 100 | 0 |
-| io-echo | 5 | 0.050 | 0.049 | 100 | 4096 |
+| nested-loops | 43 | 0.008 | 0.007 | 100 | 1 |
+| tape-walk | 200002 | 0.800 | 0.694 | 100 | 1 |
+| cell-bump | 100001 | 0.667 | 0.653 | 100 | 1 |
+| skip-scan | 100002 | 0.231 | 0.220 | 100 | 0 |
+| io-echo | 5 | 0.062 | 0.060 | 100 | 4096 |
 <!-- END RESULTS -->
 
 ## Freshness mandate
@@ -63,3 +63,11 @@ are incomplete.
 ## Optimization log
 
 - Baseline (no optimizations yet; see the results above).
+- Runner jump table + buffered I/O (`rs/src/runner.rs`): `[` skips
+  and `]` jumps are O(1) via a precomputed table; `,`/`.` go through
+  8 KiB buffers. Shared-runner noise dominates corpus means (compile
+  times, which this change cannot affect, also moved ~2x between
+  runs); heavy-loop programs improved on minima (addsub run-min
+  79.4 -> 46.6 ms, mul 65.4 -> 38.4 ms), consistent with cheaper hot
+  loops. Buffered I/O shows no change in-process (the harness uses
+  in-memory input); its win is at real pipes/files.
