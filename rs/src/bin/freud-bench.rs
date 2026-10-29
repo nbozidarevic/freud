@@ -133,7 +133,13 @@ fn bench_micros(target_ms: u128, cap: usize) -> Vec<Micro> {
             vec![],
         ),
         // 4 KiB echo: one syscall-ish read/write per byte in the naive path.
-        ("io-echo", b",[.,]".to_vec(), vec![b'A'; 4096]),
+        // Input ends with NUL: EOF leaves the cell unchanged, so `,[.,]`
+        // without a zero terminator would loop forever.
+        ("io-echo", b",[.,]".to_vec(), {
+            let mut v = vec![b'A'; 4096];
+            v.push(0);
+            v
+        }),
     ];
     defs.into_iter()
         .map(|(name, code, input)| {
