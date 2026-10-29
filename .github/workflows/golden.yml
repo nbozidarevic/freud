@@ -4,6 +4,8 @@ name: golden-snapshot
 # corpus file. Removed once goldens are committed; regenerate via
 # tests/golden/generate.sh afterwards.
 on:
+  push:
+    branches: [master]
   workflow_dispatch:
 
 jobs:
