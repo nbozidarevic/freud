@@ -99,9 +99,9 @@ fn escape_val(c: u8) -> Option<u8> {
     }
 }
 
-const KEYWORDS: [&[u8]; 14] = [
+const KEYWORDS: [&[u8]; 15] = [
     b"int", b"char", b"short", b"void", b"if", b"else", b"switch", b"case",
-    b"default", b"while", b"for", b"break", b"continue", b"return",
+    b"default", b"while", b"do", b"for", b"break", b"continue", b"return",
 ];
 
 fn is_keyword(word: &[u8]) -> bool {
@@ -463,12 +463,21 @@ mod tests {
     #[test]
     fn keywords_vs_idents() {
         assert_kinds(
-            b"if iffy while3 return",
-            &[Kind::Kw, Kind::Ident, Kind::Ident, Kind::Kw, Kind::End],
+            b"if iffy while3 return do doing",
+            &[
+                Kind::Kw,
+                Kind::Ident,
+                Kind::Ident,
+                Kind::Kw,
+                Kind::Kw,
+                Kind::Ident,
+                Kind::End,
+            ],
         );
-        let t = toks(b"if iffy while3 return");
+        let t = toks(b"if iffy while3 return do doing");
         assert_eq!(t[1].text, b"iffy");
         assert_eq!(t[2].text, b"while3");
+        assert_eq!(t[5].text, b"doing");
     }
 
     #[test]
