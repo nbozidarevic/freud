@@ -1,8 +1,8 @@
 # Roadmap
 
 Evolve the C-to-Brainfuck transpiler into a tested, documented, portable
-toolchain. Current position: Phase 2 complete — Rust core migrated,
-C++ retired (see 0005); goldens pin the verified outputs.
+toolchain. Current position: Phase 3 complete — CLI/docs reframed
+transpile-first; next is Phase 5 (performance harness).
 
 Phase order is deliberate: harden, then decide the stack, then modernize
 the build (no point polishing a build the stack decision might replace),
@@ -18,7 +18,8 @@ then optimize, extend, and distribute.
       Rust core, hand-written parser.
 - [x] Phase 2 — Rust migration (tokenizer, parser, codegen, runner,
       formatter, unified CLI) + golden CI; C++ retired.
-- [ ] Phase 3 — Reframe CLI/docs to transpile-first (no rename yet).
+- [x] Phase 3 — Reframe CLI/docs to transpile-first (compile is the
+      default command; `run`/`format` auxiliary; errors on stderr).
 - [ ] Phase 5 — Performance: harness, published results, optimizations.
 - [ ] Phase 6 — Language expansion (thesis order).
 - [ ] Phase 7 — Native-first distribution adapters; web adapter gated.

@@ -1,55 +1,34 @@
 # freud
-Freud – A toolset for working with the Brainfuck programming language
+`freud` transpiles a C subset to Brainfuck — and, as helpers around
+that, runs Brainfuck programs and pretty-prints Brainfuck code.
 
-## Requirements
-- Rust (stable toolchain)
-- A C compiler (`g++`/`clang`) — only for the end-to-end oracle checks,
-  which compare transpiled-program output against natively compiled output
-
-## Usage
+## Quick start
 
 ```
 > cargo build --release --manifest-path rs/Cargo.toml
-> ./rs/target/release/freud command [parametres]
+> ./rs/target/release/freud program.c -o program.bf
 ```
 
-## Supported commands
+`freud program.c` (no command) compiles. Without `-o`, Brainfuck goes
+to stdout; without a code file, source is read from stdin.
+
+## Commands
 
 ```
-format [-c code-file] [-o output-file] [-m]
-
-  Formats the specified Brainfuck program by removing all
-  invalid characters and adding indentation.
-
-  If no code file is specified, the standard
-  input is used.
-
-  If no output file is specified, the standard
-  output is used.
-
-  If the -m flag is specified, all whitespace is removed.
+compile [file] [-o file]        Transpile C source to Brainfuck (default)
+run [file] [-i file] [-o file]  Run a Brainfuck program
+format [file] [-o file] [-m]    Pretty-print Brainfuck (-m minifies)
+help                            Show help
 ```
+
+The code file may also be given as `-c file`. `run` requires a code
+file; `compile` and `format` fall back to stdin. Errors go to stderr
+with usage; exit code is 1.
+
+Run a transpiled program, feeding it input:
+
 ```
-run -c code-file [-i input-file] [-o output-file]
-
-  Executes the specified Brainfuck program.
-
-  If no input file is specified, the standard
-  input is used.
-
-  If no output file is specified, the standard
-  output is used.
-```
-```
-compile [-c code-file] [-o output-file]
-
-  Compiles the specified C program to Brainfuck.
-
-  If no code file is specified, the standard
-  input is used.
-
-  If no output file is specified, the standard
-  output is used.
+> ./rs/target/release/freud run -c program.bf -i input.txt
 ```
 
 ## Tests
@@ -64,3 +43,12 @@ review) after intentional changes:
 ```
 > ./tests/golden/generate.sh
 ```
+
+## What it accepts
+
+Only a C subset: `int`/`char` variables, arithmetic, comparisons,
+logic, `if`/`else`, `while`/`for`, `switch`, `printf`/`scanf` with
+`%d`/`%c`, and more — see `docs/semantics.md` for the ground-truth
+behavior and `tests/compile/` for examples. The original C++/ANTLR
+implementation was retired after the Rust port matched it byte-for-byte
+(see `docs/decisions/`).
