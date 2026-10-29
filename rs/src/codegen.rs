@@ -27,6 +27,7 @@ pub struct Emitter {
     output: Vec<u8>,
     pointer: i32,
     pub(crate) break_stack: Vec<i32>,
+    pub(crate) continue_stack: Vec<i32>,
 }
 
 /// Compile failure: mirrors a C++ `throw "..."` site.

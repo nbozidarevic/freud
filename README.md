@@ -47,7 +47,7 @@ review) after intentional changes:
 ## What it accepts
 
 Only a C subset: `int`/`char` variables, arithmetic, comparisons,
-logic, `if`/`else`, `while`/`for`/`do...while`, `switch`, `break`,
+logic, `if`/`else`, `while`/`for`/`do...while`, `switch`, `break`/`continue`,
 `printf`/`scanf` with `%d`/`%c`, and more — see `docs/semantics.md`
 for the ground-truth
 behavior and `tests/compile/` for examples. The original C++/ANTLR

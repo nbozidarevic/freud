@@ -93,27 +93,31 @@ impl Emitter {
     }
 
     fn compile_block(&mut self, b: &Block) -> Result<(), CompileError> {
-        // Once a sibling may have executed `break`, the rest of the block
-        // must be skipped at runtime (a bare flag checked only by the
-        // loop condition would let them run once more).
+        // Once a sibling may have executed `break` or `continue`, the rest
+        // of the block must be skipped at runtime (a bare flag checked only
+        // by the loop condition would let them run once more).
         let mut after_break = false;
+        let mut after_continue = false;
         for item in &b.0 {
             match item {
                 BlockItem::Decl(d) => {
-                    if after_break {
+                    if after_break || after_continue {
                         self.compile_decl_guarded(d)?
                     } else {
                         self.compile_decl(d)?
                     }
                 }
                 BlockItem::Stmt(s) => {
-                    if after_break {
+                    if after_break || after_continue {
                         self.compile_stmt_guarded(s)?
                     } else {
                         self.compile_stmt(s)?
                     }
                     if stmt_may_break(s) {
                         after_break = true;
+                    }
+                    if stmt_may_continue(s) {
+                        after_continue = true;
                     }
                 }
             }
@@ -123,11 +127,29 @@ impl Emitter {
 
     /// Compile `s`, skipping it at runtime if the innermost break flag is
     /// set (statements after a potential `break` in the same block).
+    /// The continue guard layers inside, so a statement after both a
+    /// possible `break` and a possible `continue` needs neither flag set.
     fn compile_stmt_guarded(&mut self, s: &Stmt) -> Result<(), CompileError> {
         if let Some(&flag) = self.break_stack.last() {
             if flag >= 0 {
                 let nb = self.negate(flag)?;
-                return self.perform_if_else(nb, |em| em.compile_stmt(s), |_| Ok(()));
+                return self.perform_if_else(
+                    nb,
+                    |em| em.compile_stmt_guarded_continue(s),
+                    |_| Ok(()),
+                );
+            }
+        }
+        self.compile_stmt_guarded_continue(s)
+    }
+
+    /// Continue half of `compile_stmt_guarded`: skip `s` at runtime if
+    /// the innermost continue flag is set.
+    fn compile_stmt_guarded_continue(&mut self, s: &Stmt) -> Result<(), CompileError> {
+        if let Some(&flag) = self.continue_stack.last() {
+            if flag >= 0 {
+                let nc = self.negate(flag)?;
+                return self.perform_if_else(nc, |em| em.compile_stmt(s), |_| Ok(()));
             }
         }
         self.compile_stmt(s)
@@ -138,7 +160,22 @@ impl Emitter {
         if let Some(&flag) = self.break_stack.last() {
             if flag >= 0 {
                 let nb = self.negate(flag)?;
-                return self.perform_if_else(nb, |em| em.compile_decl(d), |_| Ok(()));
+                return self.perform_if_else(
+                    nb,
+                    |em| em.compile_decl_guarded_continue(d),
+                    |_| Ok(()),
+                );
+            }
+        }
+        self.compile_decl_guarded_continue(d)
+    }
+
+    /// Continue half of `compile_decl_guarded`.
+    fn compile_decl_guarded_continue(&mut self, d: &Decl) -> Result<(), CompileError> {
+        if let Some(&flag) = self.continue_stack.last() {
+            if flag >= 0 {
+                let nc = self.negate(flag)?;
+                return self.perform_if_else(nc, |em| em.compile_decl(d), |_| Ok(()));
             }
         }
         self.compile_decl(d)
@@ -170,6 +207,51 @@ impl Emitter {
         }
     }
 
+    /// Allocate the `continued` flag for a loop whose body may continue,
+    /// and push it (or the `-1` sentinel when the body cannot continue,
+    /// keeping the old error for any missed case). Returns the flag cell,
+    /// if any. Unlike `broken`, this flag does not gate the loop
+    /// condition — `continue` re-tests it — but it must be cleared at
+    /// the start of each body execution (see the loop arms).
+    fn loop_continue_flag(&mut self, body: &Stmt) -> Result<Option<i32>, CompileError> {
+        if stmt_may_continue(body) {
+            let continued = self.const_value(0);
+            self.continue_stack.push(continued);
+            Ok(Some(continued))
+        } else {
+            self.continue_stack.push(-1);
+            Ok(None)
+        }
+    }
+
+    /// Condition `c` additionally gated on the `continued` flag being
+    /// clear (identity when no flag is active). Used for `switch` case
+    /// guards: a `continue` inside a case must stop later cases running.
+    fn and_not_continued(&mut self, c: i32) -> Result<i32, CompileError> {
+        match self.continue_stack.last().copied() {
+            Some(f) if f >= 0 => {
+                let nc = self.negate(f)?;
+                self.logical_and(c, nc)
+            }
+            _ => Ok(c),
+        }
+    }
+
+    /// Clear the `continued` flag at the start of a loop-body execution,
+    /// then compile the body. Clearing here (rather than after the body)
+    /// is what makes `continue` skip the rest of the body but still run
+    /// the `for` update and re-test the condition on the next pass.
+    fn compile_loop_body(
+        &mut self,
+        body: &Stmt,
+        continued: Option<i32>,
+    ) -> Result<(), CompileError> {
+        if let Some(flag) = continued {
+            self.set_value(flag, 0);
+        }
+        self.compile_stmt(body)
+    }
+
     fn compile_stmt(&mut self, s: &Stmt) -> Result<(), CompileError> {
         match s {
             Stmt::Compound(b) => self.compile_block(b),
@@ -192,30 +274,35 @@ impl Emitter {
             Stmt::Switch { expr, body } => self.compile_switch(expr, body),
             Stmt::While { cond, body } => {
                 let broken = self.loop_break_flag(body)?;
+                let continued = self.loop_continue_flag(body)?;
                 let r = self.perform_while(
                     |em| {
                         let c = em.compile_expr(cond)?;
                         em.and_not_broken(c, broken)
                     },
-                    |em| em.compile_stmt(body),
+                    |em| em.compile_loop_body(body, continued),
                 );
+                self.continue_stack.pop();
                 self.break_stack.pop();
                 r
             }
             Stmt::DoWhile { body, cond } => {
                 let broken = self.loop_break_flag(body)?;
+                let continued = self.loop_continue_flag(body)?;
                 let r = self.perform_do_while(
                     |em| {
                         let c = em.compile_expr(cond)?;
                         em.and_not_broken(c, broken)
                     },
-                    |em| em.compile_stmt(body),
+                    |em| em.compile_loop_body(body, continued),
                 );
+                self.continue_stack.pop();
                 self.break_stack.pop();
                 r
             }
             Stmt::For { init, cond, incr, body } => {
                 let broken = self.loop_break_flag(body)?;
+                let continued = self.loop_continue_flag(body)?;
                 let r = self.perform_for(
                     |em| em.compile_for_init(init),
                     |em| {
@@ -244,8 +331,9 @@ impl Emitter {
                             }
                         }
                     },
-                    |em| em.compile_stmt(body),
+                    |em| em.compile_loop_body(body, continued),
                 );
+                self.continue_stack.pop();
                 self.break_stack.pop();
                 r
             }
@@ -262,10 +350,19 @@ impl Emitter {
                 Ok(())
             }
             Stmt::Continue => {
-                if self.break_stack.is_empty() {
+                // Binds the innermost loop (through a `switch`, unlike
+                // `break`): set its `continued` flag. The rest of the
+                // body is skipped by the sibling guards, the `for`
+                // update still runs, and the flag is cleared at the
+                // next body execution.
+                let Some(&top) = self.continue_stack.last() else {
                     return Err(err("Unsupported continue outside of any loop"));
+                };
+                if top < 0 {
+                    return Err(err("Unsupported continue inside loops"));
                 }
-                Err(err("Unsupported continue inside loops"))
+                self.set_value(top, 1);
+                Ok(())
             }
             // Labels outside `switch`: the label (if any) compiles and is
             // dropped, the body compiles normally — the base visitor does
@@ -337,30 +434,39 @@ impl Emitter {
                 let o = self.logical_or(matched[i], fall)?;
                 self.logical_and(o, nb)?
             };
+            // A `continue` in a case binds the enclosing loop: later
+            // cases must not run (fallthrough is cut) and the loop's
+            // `continued` flag stays set until the next body execution.
+            let run_cond = self.and_not_continued(run_cond)?;
             self.perform_if_else(
                 run_cond,
                 |em| {
                     em.set_value(fall, 1);
                     // Same sibling rule as blocks: statements after a
-                    // potential `break` in this case are flag-guarded.
+                    // potential `break` or `continue` in this case are
+                    // flag-guarded.
                     let mut after_break = false;
+                    let mut after_continue = false;
                     for item in &c.body {
                         match item {
                             SwitchBodyItem::Decl(d) => {
-                                if after_break {
+                                if after_break || after_continue {
                                     em.compile_decl_guarded(d)?
                                 } else {
                                     em.compile_decl(d)?
                                 }
                             }
                             SwitchBodyItem::Stmt(s) => {
-                                if after_break {
+                                if after_break || after_continue {
                                     em.compile_stmt_guarded(s)?
                                 } else {
                                     em.compile_stmt(s)?
                                 }
                                 if stmt_may_break(s) {
                                     after_break = true;
+                                }
+                                if stmt_may_continue(s) {
+                                    after_continue = true;
                                 }
                             }
                         }
@@ -669,6 +775,29 @@ fn stmt_may_break(s: &Stmt) -> bool {
         | Stmt::DoWhile { .. }
         | Stmt::For { .. }
         | Stmt::Switch { .. } => false,
+        _ => false,
+    }
+}
+
+/// Whether `s` may execute a `continue` bound to the *innermost
+/// enclosing* loop. Unlike `break`, `continue` passes through a
+/// `switch` (it binds the loop, not the switch); nested loops still
+/// bind their own continues and do not count.
+fn stmt_may_continue(s: &Stmt) -> bool {
+    match s {
+        Stmt::Continue => true,
+        Stmt::Compound(b) => b.0.iter().any(|it| match it {
+            BlockItem::Stmt(s) => stmt_may_continue(s),
+            BlockItem::Decl(_) => false,
+        }),
+        Stmt::If { then, els, .. } => {
+            stmt_may_continue(then) || els.as_ref().is_some_and(|e| stmt_may_continue(e))
+        }
+        Stmt::Switch { body, .. } => stmt_may_continue(body),
+        Stmt::Case { body, .. } | Stmt::Default { body } | Stmt::GotoLabel { body, .. } => {
+            stmt_may_continue(body)
+        }
+        Stmt::While { .. } | Stmt::DoWhile { .. } | Stmt::For { .. } => false,
         _ => false,
     }
 }
