@@ -24,8 +24,9 @@ then optimize, extend, and distribute.
 - [x] Phase 5 — Performance: harness, published results, runner
       optimization; peephole rejected by measurement.
 - [ ] Phase 6 — Language expansion (thesis order).
-- [ ] Phase 7 — Native-first distribution adapters; web adapter gated.
-      7a C ABI done (`rs/ffi/`, record 0006); UniFFI/JNI deferred, named.
+- [x] Phase 7 — Native-first distribution adapters; web adapter gated.
+      7a C ABI (`rs/ffi/`), 7b WASM/demo (`rs/wasm/`, `demo/`) done,
+      record 0006; UniFFI/JNI deferred, named; npm/Pages owner-gated.
 - [ ] Phase 8 — Rename, final docs, changelog, tag.
 
 ## Operating loop (CI-primary)

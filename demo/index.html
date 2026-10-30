@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>freud — C to Brainfuck, in the browser</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2em auto; padding: 0 1em; }
+  textarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, monospace; }
+  pre { background: #f4f4f4; padding: 1em; white-space: pre-wrap; word-break: break-all; }
+  .error { color: #a00; }
+</style>
+</head>
+<body>
+<h1>C to Brainfuck</h1>
+<p>Transpile a C subset to Brainfuck and run it, entirely in the
+browser (WebAssembly build of the same Rust core as the CLI).
+See the <a href="https://github.com/nbozidarevic/freud">repo</a> for
+what the subset accepts.</p>
+
+<label>C source<br>
+<textarea id="src" rows="8">int main() {
+  printf("%d\n", 6 * 7);
+}
+</textarea></label>
+<p>
+<button id="compile" type="button">Transpile</button>
+<button id="run" type="button">Transpile &amp; run</button>
+</p>
+<label>Program input (for <code>scanf</code>)<br>
+<textarea id="input" rows="2"></textarea></label>
+
+<h2>Brainfuck</h2>
+<pre id="bf">(nothing transpiled yet)</pre>
+<h2>Output</h2>
+<pre id="out">(nothing run yet)</pre>
+<p id="status">Loading WebAssembly…</p>
+
+<script type="module" src="./demo.js"></script>
+</body>
+</html>

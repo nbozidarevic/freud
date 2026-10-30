@@ -37,6 +37,15 @@ Distribution proceeds native-first, in this order:
 - The C ABI is verified two ways: Rust tests calling the exported
   functions, and the C example built and run on Ubuntu and macOS
   (`c-abi` CI job).
+
+## Update (2026-10-30): 7b built
+
+The web adapter exists: `freud-wasm` crate (`rs/wasm/`), the
+`demo/` page, a Node smoke test, and a dispatch-only Pages workflow.
+CI verifies all three `wasm-pack` targets (`web`, `nodejs`,
+`bundler`) and the smoke test. npm publishing and Pages deployment
+remain owner-gated manual steps (see `rs/wasm/README.md`); neither
+has been run.
 - Symbol names (`freud_*`) change with the Phase 8 rename. That is a
   breaking change to this ABI, accepted while the version is 0.0.0;
   the contract shape (return codes, ownership, error accessor)

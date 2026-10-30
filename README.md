@@ -31,6 +31,13 @@ Run a transpiled program, feeding it input:
 > ./rs/target/release/freud run -c program.bf -i input.txt
 ```
 
+## Embedding
+
+The core is a dependency-free Rust library. Adapters live outside it:
+
+- C/C++: C ABI in [rs/ffi/](/Users/nenad/Code/freud/rs/ffi) (`freud.h`, `freud_compile`/`freud_run`/`freud_format`).
+- Web: WebAssembly adapter in [rs/wasm/](/Users/nenad/Code/freud/rs/wasm) and the demo in [demo/](/Users/nenad/Code/freud/demo). npm publishing and Pages deployment are manual, owner-gated steps; see [rs/wasm/README.md](/Users/nenad/Code/freud/rs/wasm/README.md).
+
 ## Tests
 
 ```

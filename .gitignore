@@ -3,3 +3,4 @@ obj/*
 .vscode
 tests/compile/*.oracle
 rs/target/
+demo/pkg/

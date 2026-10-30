@@ -4,7 +4,7 @@ version = "0.0.0"
 edition = "2021"
 
 [workspace]
-members = [".", "ffi"]
+members = [".", "ffi", "wasm"]
 # Plain `cargo build`/`cargo test` at this manifest keep meaning
 # "the core only"; adapter crates build via their own manifests.
 default-members = ["."]

@@ -298,3 +298,33 @@ jobs:
           else
             LD_LIBRARY_PATH=rs/target/release /tmp/freud_example
           fi
+
+  wasm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v2
+
+      - name: Unit tests
+        run: cargo test --manifest-path rs/wasm/Cargo.toml
+
+      - name: Build web bundle for the demo
+        run: wasm-pack build rs/wasm --target web --out-dir demo/pkg
+
+      - name: Build Node bundle and smoke-test
+        run: |
+          wasm-pack build rs/wasm --target nodejs --out-dir /tmp/freud-node-pkg
+          node rs/wasm/smoke.cjs /tmp/freud-node-pkg
+
+      - name: Validate publishable npm package shape
+        run: |
+          wasm-pack build rs/wasm --target bundler --out-dir /tmp/freud-pkg
+          cd /tmp/freud-pkg && npm pack --dry-run
