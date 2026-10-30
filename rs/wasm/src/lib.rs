@@ -61,20 +61,9 @@ mod tests {
         assert_eq!(run(&bf, &[]).unwrap(), b"42\n");
     }
 
-    #[test]
-    fn compile_error_is_reported() {
-        let err = compile("int main( {").unwrap_err();
-        assert!(err.as_string().is_some_and(|m| !m.is_empty()));
-    }
-
-    #[test]
-    fn run_reports_unbalanced_brackets() {
-        let err = run("]", &[]).unwrap_err();
-        assert_eq!(
-            err.as_string().as_deref(),
-            Some(freud_core::runner::ERR_UNEXPECTED_CLOSE)
-        );
-    }
+    // Error paths are covered by the Node smoke test (smoke.cjs):
+    // constructing a JsValue outside wasm panics, so the Err arms
+    // cannot be exercised by native unit tests.
 
     #[test]
     fn format_minifies() {

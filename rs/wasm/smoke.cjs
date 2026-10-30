@@ -24,8 +24,16 @@ const out = run(bf, new Uint8Array(0));
 assert.ok(out instanceof Uint8Array, "run returns bytes");
 assert.deepEqual(Array.from(out), [52, 50, 10], 'run prints "42\\n"');
 
-assert.throws(() => compile("int main( {"), /./, "bad source throws");
-assert.throws(() => run("]", new Uint8Array(0)), /unexpected/, "unbalanced close throws");
+assert.throws(
+  () => compile("int main( {"),
+  (err) => typeof err === "string" && err.length > 0,
+  "bad source throws a diagnostic",
+);
+assert.throws(
+  () => run("]", new Uint8Array(0)),
+  /unexpected/,
+  "unbalanced close throws",
+);
 
 assert.equal(format_code("a + b [ignored]", true), "+[]\n", "minify keeps commands");
 
