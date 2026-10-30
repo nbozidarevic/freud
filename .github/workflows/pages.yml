@@ -29,7 +29,7 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v2
+        uses: jetli/wasm-pack-action@v0.4.0
 
       - name: Build demo bundle
         run: wasm-pack build rs/wasm --target web --out-dir demo/pkg

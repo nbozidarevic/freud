@@ -311,7 +311,7 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v2
+        uses: jetli/wasm-pack-action@v0.4.0
 
       - name: Unit tests
         run: cargo test --manifest-path rs/wasm/Cargo.toml
