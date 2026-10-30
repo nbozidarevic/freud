@@ -25,6 +25,7 @@ then optimize, extend, and distribute.
       optimization; peephole rejected by measurement.
 - [ ] Phase 6 — Language expansion (thesis order).
 - [ ] Phase 7 — Native-first distribution adapters; web adapter gated.
+      7a C ABI done (`rs/ffi/`, record 0006); UniFFI/JNI deferred, named.
 - [ ] Phase 8 — Rename, final docs, changelog, tag.
 
 ## Operating loop (CI-primary)

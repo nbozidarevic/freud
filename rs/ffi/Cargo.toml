@@ -1,0 +1,13 @@
+[package]
+name = "freud-ffi"
+version = "0.0.0"
+edition = "2021"
+description = "C ABI adapter over freud-core (kept out of the core crate by the pollution veto)"
+license = "MIT"
+
+[lib]
+name = "freud"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+freud-core = { path = ".." }

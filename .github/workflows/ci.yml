@@ -269,3 +269,32 @@ jobs:
 
       - name: Run harness
         run: ./rs/target/release/freud-bench
+
+  c-abi:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build shared library
+        run: cargo build --release --manifest-path rs/ffi/Cargo.toml
+
+      - name: ABI unit tests
+        run: cargo test --release --manifest-path rs/ffi/Cargo.toml
+
+      - name: Build and run C example
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror rs/ffi/example.c -Irs/ffi \
+            -o /tmp/freud_example -Lrs/target/release -lfreud
+          if [ "$(uname)" = "Darwin" ]; then
+            DYLD_LIBRARY_PATH=rs/target/release /tmp/freud_example
+          else
+            LD_LIBRARY_PATH=rs/target/release /tmp/freud_example
+          fi
