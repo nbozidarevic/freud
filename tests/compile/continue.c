@@ -70,10 +70,10 @@ int main() {
     w = w + 1;
     switch (w) {
       case 1: s3 = s3 + 1; continue;
-      case 2: s3 = s3 + 10; continue;
-      default: s3 = s3 + 100; break;
+      case 2: s3 = s3 + 2; continue;
+      default: s3 = s3 + 4; break;
     }
-    s3 = s3 + 1000;
+    s3 = s3 + 10;
   }
   printf("%d\n", s3);
   int p = 0;
