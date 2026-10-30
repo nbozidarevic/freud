@@ -28,6 +28,8 @@ then optimize, extend, and distribute.
       7a C ABI (`rs/ffi/`), 7b WASM/demo (`rs/wasm/`, `demo/`) done,
       record 0006; UniFFI/JNI deferred, named; npm/Pages owner-gated.
 - [ ] Phase 8 — Rename, final docs, changelog, tag.
+      Prep done (`CHANGELOG.md`, `docs/rename-checklist.md`); the
+      rename itself and the tag are the owner's step.
 
 ## Operating loop (CI-primary)
 
