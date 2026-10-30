@@ -440,40 +440,51 @@ impl Emitter {
     }
 
     /// Print cell `a` as a decimal number (`printAsNumber`).
+    ///
+    /// Place-value extraction: `helper` holds the current decimal
+    /// place (100, 10, 1), computed once from `a`; each pass prints
+    /// `a_copy / helper` and strips it. The previous shape recomputed
+    /// the leading digit from the remainder alone, which lost interior
+    /// zeros (101 printed as 110, 209 as 2900) and re-ran the divide
+    /// machinery once per emitted digit.
     pub fn print_as_number(&mut self, a: i32) -> Result<(), CompileError> {
         let a_copy = self.duplicate_value(a);
         let digit = self.duplicate_value(a);
-        let helper = self.const_value(0);
+        let helper = self.const_value(1);
         let zero_char = self.const_value(b'0');
         let nine = self.const_value(9);
         let ten = self.const_value(10);
-        let newly_built = self.const_value(0);
         self.perform_if_else(
             a,
             |em| {
+                // Highest power of ten not exceeding `a`. `digit`
+                // ends as the leading digit; the main loop recomputes
+                // every digit from `a_copy` and `helper` anyway.
                 em.perform_while(
-                    |em| Ok(em.less_than(newly_built, a)?),
+                    |em| Ok(em.greater_than(digit, nine)?),
                     |em| {
-                        em.set_value(helper, 1);
-                        em.copy_value(a_copy, digit);
-                        em.perform_while(
-                            |em| Ok(em.greater_than(digit, nine)?),
-                            |em| {
-                                let q = em.divide_values(digit, ten)?;
-                                em.move_value(q, digit);
-                                let h = em.multiply_values(helper, ten);
-                                em.move_value(h, helper);
-                                Ok(())
-                            },
-                        )?;
-                        let shifted = em.multiply_values(newly_built, ten);
-                        let acc = em.add_values(shifted, digit);
-                        em.move_value(acc, newly_built);
+                        let q = em.divide_values(digit, ten)?;
+                        em.move_value(q, digit);
+                        let h = em.multiply_values(helper, ten);
+                        em.move_value(h, helper);
+                        Ok(())
+                    },
+                )?;
+                // One pass per place; `helper` reaching 0 ends the
+                // loop. The condition is `helper` itself: it is
+                // re-tested after each pass, once divided by ten.
+                em.perform_while(
+                    |em| Ok(helper),
+                    |em| {
+                        let q = em.divide_values(a_copy, helper)?;
+                        em.move_value(q, digit);
                         let glyph = em.add_values(digit, zero_char);
                         em.print_as_char(glyph);
                         let scaled = em.multiply_values(digit, helper);
                         let rest = em.subtract_values(a_copy, scaled);
                         em.move_value(rest, a_copy);
+                        let q = em.divide_values(helper, ten)?;
+                        em.move_value(q, helper);
                         Ok(())
                     },
                 )
